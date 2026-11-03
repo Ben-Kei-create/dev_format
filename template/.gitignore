@@ -1,0 +1,8 @@
+# 個人情報・秘密情報は絶対にコミットしない
+private/*
+!private/*.example.md
+*.p8
+*.p12
+*.mobileprovision
+.env
+.env.*
