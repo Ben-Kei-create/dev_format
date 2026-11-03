@@ -14,18 +14,26 @@ if [ -n "$bad" ]; then
 fi
 
 # 2) owner_info.md の実値が、ステージされた追加行に含まれていないか
+#    (文字コードの影響を避けるため python3 で処理する)
 info="$root/private/owner_info.md"
 if [ -f "$info" ]; then
-  added="$(git diff --cached -U0 --no-color | grep -E '^\+' | grep -vE '^\+\+\+' || true)"
-  while IFS= read -r line; do
-    v="$(printf '%s' "$line" | sed -nE 's/^- [^:：]+[:：][[:space:]]*(.+)$/\1/p')"
-    [ "${#v}" -ge 2 ] || continue
-    if printf '%s\n' "$added" | grep -qF -- "$v"; then
-      key="$(printf '%s' "$line" | sed -nE 's/^- ([^:：]+)[:：].*$/\1/p')"
-      echo "中止: 個人情報(キー: ${key})の値が、コミット対象に含まれています。{{${key}}} に置き換えてください。" >&2
-      fail=1
-    fi
-  done < "$info"
+  if ! git diff --cached -U0 --no-color | python3 -I -c '
+import re, sys
+info, added, bad = sys.argv[1], [], []
+for l in sys.stdin.read().splitlines():
+    if l.startswith("+") and not l.startswith("+++"):
+        added.append(l[1:])
+text = "\n".join(added)
+for line in open(info, encoding="utf-8").read().splitlines():
+    m = re.match(r"^- ([^:：]+)[:：]\s*(.+)$", line)
+    if m and len(m.group(2).strip()) >= 2 and m.group(2).strip() in text:
+        bad.append(m.group(1).strip())
+for k in bad:
+    sys.stderr.write("中止: 個人情報(キー: %s)の値が、コミット対象に含まれています。{{%s}} に置き換えてください。\n" % (k, k))
+sys.exit(1 if bad else 0)
+' "$info"; then
+    fail=1
+  fi
 fi
 
 exit "$fail"
