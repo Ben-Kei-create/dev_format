@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# コミット前に個人情報の混入を検査する(コミットを中止する)。
+set -euo pipefail
+root="$(git rev-parse --show-toplevel)"
+fail=0
+
+# 1) private/ 配下のファイルがステージされていないか(見本 *.example.md は除く)
+bad="$(git diff --cached --name-only | grep -E '^private/' | grep -vE '^private/[^/]*\.example\.md$' || true)"
+if [ -n "$bad" ]; then
+  echo "中止: private/ のファイルがステージされています:" >&2
+  echo "$bad" | sed 's/^/  /' >&2
+  echo "  取り消し: git restore --staged <ファイル>" >&2
+  fail=1
+fi
+
+# 2) owner_info.md の実値が、ステージされた追加行に含まれていないか
+info="$root/private/owner_info.md"
+if [ -f "$info" ]; then
+  added="$(git diff --cached -U0 --no-color | grep -E '^\+' | grep -vE '^\+\+\+' || true)"
+  while IFS= read -r line; do
+    v="$(printf '%s' "$line" | sed -nE 's/^- [^:：]+[:：][[:space:]]*(.+)$/\1/p')"
+    [ "${#v}" -ge 2 ] || continue
+    if printf '%s\n' "$added" | grep -qF -- "$v"; then
+      key="$(printf '%s' "$line" | sed -nE 's/^- ([^:：]+)[:：].*$/\1/p')"
+      echo "中止: 個人情報(キー: ${key})の値が、コミット対象に含まれています。{{${key}}} に置き換えてください。" >&2
+      fail=1
+    fi
+  done < "$info"
+fi
+
+exit "$fail"
