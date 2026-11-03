@@ -7,6 +7,7 @@
 - `review_prompts/`: 審査チェック指示文(1 企画時 / 2 開発中 / 3 提出前)
 - `docs/`: 開発ログ、競合メモ、TestFlight 記録、審査返信の下書き
 - `appstore/`: App Store Connect 申請キット作成指示書、アプリ固有の入力欄
+- `scripts/fill_private.sh`: 申請キットの `{{キー}}` を、個人情報で置き換えた非公開版を作る
 - `private/`: 個人情報の置き場(.gitignore で除外。見本のみ入っている)
 - `.gitignore`: 個人情報・鍵類をコミットしない設定
 
