@@ -48,4 +48,6 @@
 - スクリーンショットは `appstore/screenshots.md` に従い、Xcode のシミュレータで撮る。捏造しない。テスト広告・デバッグ表示は写さない。
 
 ## 役割
-- Claude Code: 企画・実装・クオリティアップ。Codex: 独立レビュー(`review_prompts/codex_review.md` を渡す)。
+- Claude Code: 企画・実装・修正に集中する。レビュー・校正・第二の意見は ChatGPT / Codex に任せる(Claude の負荷を下げる)。
+- 渡す指示文と添付物は `review_prompts/external/README.md`(企画 / 画面 / コード / 文面)。結果は「Claude Code への修正依頼」だけを受け取り、【重大】【推奨】から直す。
+- オーナーが判断する。外部レビューは意見であり仕様ではない。

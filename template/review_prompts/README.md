@@ -14,6 +14,9 @@
 | Codex レビュー | codex_review.md | 区切りごと。Codex に渡す独立レビュー指示 |
 | 3 提出前 | 3_submission.md | 申請の直前。通過後に申請キットを作る |
 
+## ChatGPT / Codex に任せるレビュー
+Claude の負荷を下げるため、レビューは `external/` の指示文で ChatGPT / Codex に任せる(企画・画面・文面)。詳細は `external/README.md`。
+
 ## 既存アプリ
 | ファイル | タイミング |
 |---|---|
