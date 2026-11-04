@@ -9,7 +9,7 @@
 - 開発の経緯は `docs/devlog.md` に、競合との違いは `docs/competitor_notes.md` に、
   テスターの意見は `docs/testflight_feedback.md` に、その都度記録する。
 - 他の自分のアプリとコードや画面構成が同型にならないよう、共通化は標準的な部品に留める。
-- 個人情報(名前、電話、メール、住所、パスワード、鍵・トークン、広告ID等)は、コミット・PR・公開ページに決して含めない。
-  実値は `private/owner_info.md`(.gitignore 済み)にだけ置く。コミット前に `git diff --cached` で確認する。
 - App Store Connect の申請準備は `appstore/submission_kit_instructions.md` に従い、アプリ固有の値は `appstore/app_input.md` に書く。
-- 申請用のコピペリスト `appstore/kit.md` は、審査チェックの段階1〜3が全て通過してから作る。個人情報は `{{キー}}` で書き、実値は `./scripts/fill_private.sh` で `private/` に出力する(コミットしない)。
+- 個人情報(姓名、メール、電話、住所、パスワード、鍵・トークン)は、コミット・PR・公開ページ・チャットに決して書かない。
+  申請キットでは、姓名・メールは「本人が手入力」とし、電話番号は `+81 XXXXXXXXXX` の形にする。
+- 申請用のコピペリスト `appstore/kit.md` は、審査チェックの段階1〜3が全て通過してから作る。

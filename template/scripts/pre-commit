@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
-# コミット前に個人情報の混入を検査する(コミットを中止する)。
+# コミット前に個人情報らしいものの混入を検査し、見つけたらコミットを中止する。
 set -euo pipefail
-root="$(git rev-parse --show-toplevel)"
 fail=0
 
 # 1) private/ 配下のファイルがステージされていないか(見本 *.example.md は除く)
@@ -9,31 +8,29 @@ bad="$(git diff --cached --name-only | grep -E '^private/' | grep -vE '^private/
 if [ -n "$bad" ]; then
   echo "中止: private/ のファイルがステージされています:" >&2
   echo "$bad" | sed 's/^/  /' >&2
-  echo "  取り消し: git restore --staged <ファイル>" >&2
   fail=1
 fi
 
-# 2) owner_info.md の実値が、ステージされた追加行に含まれていないか
-#    (文字コードの影響を避けるため python3 で処理する)
-info="$root/private/owner_info.md"
-if [ -f "$info" ]; then
-  if ! git diff --cached -U0 --no-color | python3 -I -c '
+# 2) 追加行にメールアドレス・電話番号らしい文字列がないか
+git diff --cached -U0 --no-color | python3 -I -c '
 import re, sys
-info, added, bad = sys.argv[1], [], []
+email = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}")
+phone = re.compile(r"(?:\+81[ -]?\(?0?\)?[1-9][0-9 -]{7,}|(?<![0-9])0[1-9]0?[ -]?[0-9]{3,4}[ -]?[0-9]{4}(?![0-9]))")
+ok_domains = ("example.com", "example.org", "example.net", "users.noreply.github.com", "anthropic.com")
+bad = []
 for l in sys.stdin.read().splitlines():
-    if l.startswith("+") and not l.startswith("+++"):
-        added.append(l[1:])
-text = "\n".join(added)
-for line in open(info, encoding="utf-8").read().splitlines():
-    m = re.match(r"^- ([^:：]+)[:：]\s*(.+)$", line)
-    if m and len(m.group(2).strip()) >= 2 and m.group(2).strip() in text:
-        bad.append(m.group(1).strip())
-for k in bad:
-    sys.stderr.write("中止: 個人情報(キー: %s)の値が、コミット対象に含まれています。{{%s}} に置き換えてください。\n" % (k, k))
+    if not l.startswith("+") or l.startswith("+++"):
+        continue
+    t = l[1:]
+    for m in email.findall(t):
+        if not m.lower().endswith(ok_domains):
+            bad.append(("メールアドレス", m))
+    for m in phone.findall(t):
+        bad.append(("電話番号", m))
+for kind, v in bad:
+    sys.stderr.write("中止: %sらしい文字列がコミット対象に含まれています: %s\n" % (kind, v))
 sys.exit(1 if bad else 0)
-' "$info"; then
-    fail=1
-  fi
-fi
+' || fail=1
 
+[ "$fail" -eq 0 ] || echo "(意図したものなら、内容を確認のうえ git commit --no-verify で回避できます)" >&2
 exit "$fail"
