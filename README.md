@@ -7,6 +7,7 @@
 - `review_prompts/`: 審査チェック指示文(1 企画時 / 2 開発中 / 3 提出前)
 - `docs/`: 詳細設計書(依頼メモ)、逸脱ログ、想定外バグ/ユーザー記録、開発ログ、競合メモ、TestFlight 記録、審査返信の下書き
 - `web/`: 公開ページ(紹介・サポート・プライバシー)の雛形。GiveTeX サイト用
+- `modes/asset_requests.md`: 画像素材(背景・装飾など)を ChatGPT に頼むための、プロンプト・サイズ指示の形式
 - `modes/`: カスタムモード(企画の最初の3つの質問。Era / Rule / Voice の縛り)
 - `ExperiencePoints.md`: 開発で得た知見をためる場所。申請完了後に、選別して更新する(唯一更新してよいファイル)
 - `randomdice.md`: 設計の依存度をダイスで決める仕組み(`scripts/roll_dice.sh`、`scripts/roll_research.sh`)
