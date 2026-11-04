@@ -6,6 +6,7 @@
 | 段階 | ファイル | タイミング |
 |---|---|---|
 | 0 受け取り | 0_brief_intake.md | 詳細設計書・参考画像を受け取った最初 |
+| Codex レビュー | codex_review.md | 実装後、いつでも。Codex に渡す独立レビュー指示 |
 | 1 企画時 | 1_planning.md | コードを書く前 |
 | 1b 差別化 | 1b_growth.md | 企画時(段階1と一緒に) |
 | 2 開発中 | 2_development.md | 主要機能ができた時。TestFlight もここで開始 |
