@@ -9,6 +9,7 @@
 | 1 企画時 | 1_planning.md | コードを書く前 |
 | 1b 差別化 | 1b_growth.md | 企画時(段階1と一緒に) |
 | 2 開発中 | 2_development.md | 主要機能ができた時。TestFlight もここで開始 |
+| 2b 想定外 | 2b_edge_cases.md | 開発中(段階2と一緒に)。想定外のバグ・ユーザーで品質とコンテンツを広げる |
 | 3 提出前 | 3_submission.md | 申請の直前 |
 
 背景: wineryQuiz が 4.3(a)(b) と 4.2.6 でリジェクトされた(beerQuiz と同型で題材だけ違うため)。
