@@ -6,6 +6,7 @@
 | 段階 | ファイル | タイミング |
 |---|---|---|
 | 1 企画時 | 1_planning.md | コードを書く前 |
+| 1b 差別化 | 1b_growth.md | 企画時(段階1と一緒に) |
 | 2 開発中 | 2_development.md | 主要機能ができた時。TestFlight もここで開始 |
 | 3 提出前 | 3_submission.md | 申請の直前 |
 

@@ -6,6 +6,7 @@
 - `CLAUDE.md`: Claude Code が起動時に読む開発ルール
 - `review_prompts/`: 審査チェック指示文(1 企画時 / 2 開発中 / 3 提出前)
 - `docs/`: 開発ログ、競合メモ、TestFlight 記録、審査返信の下書き
+- `growth/`: 初回リリース・差別化のプレイブック(自分用)
 - `appstore/`: App Store Connect 申請キット作成指示書、アプリ固有の入力欄
 - `scripts/pre-commit`: メール・電話番号らしい文字列や `private/` のファイルを含むコミットを中止する
 - `.gitignore`: 個人情報・鍵類をコミットしない設定
