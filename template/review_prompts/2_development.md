@@ -19,6 +19,7 @@
 8. 公開ページ(`web/` の雛形)を並行して作り始めているか。申請前に公開できる見込みか
 9. 画像素材が必要な画面(背景、装飾、空の状態など)を洗い出し、`modes/asset_requests.md` の形式で依頼できているか。`docs/asset_list.md` と実装が一致しているか
 10. TestFlight のテスター募集の投稿案(`marketing/post_templates.md` のA)を用意したか
+11. アイコンや他の場面・他アプリのアニメーション/素材を使い回していないか(`modes/asset_requests.md`)
 
 ## 出力
 - 通過可能性(高/中/低)
