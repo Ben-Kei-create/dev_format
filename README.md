@@ -6,6 +6,7 @@
 - `CLAUDE.md`: Claude Code が起動時に読む開発ルール
 - `review_prompts/`: 審査チェック指示文(1 企画時 / 2 開発中 / 3 提出前)
 - `docs/`: 詳細設計書(依頼メモ)、逸脱ログ、想定外バグ/ユーザー記録、開発ログ、競合メモ、TestFlight 記録、審査返信の下書き
+- `ExperiencePoints.md`: 開発で得た知見をためる場所。申請完了後に、選別して更新する(唯一更新してよいファイル)
 - `randomdice.md`: 設計の依存度をダイスで決める仕組み(`scripts/roll_dice.sh`、`scripts/roll_research.sh`)
 - `workflow/`: コマンド・スキル・モデルの使い分けガイド(品質とトークン節約)
 - `philosophy/`: オーナーの開発思想、デザイン共通原則、技術・設計の標準方針
