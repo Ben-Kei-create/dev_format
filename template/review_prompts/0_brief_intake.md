@@ -16,6 +16,9 @@
 `modes/custom_mode.md` に従い、3つの質問(Era / Rule / Voice)を、アプリに合わせた4択のおすすめで出す。
 オーナーの番号の答えを縛りとして設計に反映し、`docs/mode_log.md` に記録する。確認の質問は重ねない。
 
+## 0.7 アイコン用プロンプト
+3つの質問の答えが出たら、`modes/icon_prompt.md` に従い、ChatGPT に渡すアイコン用プロンプトを**最大2パターン**、先に作って渡す。`docs/icon_prompts.md` に保存する。
+
 ## 過去の経験
 `ExperiencePoints.md` を先に読み、同じ失敗を繰り返さない。
 

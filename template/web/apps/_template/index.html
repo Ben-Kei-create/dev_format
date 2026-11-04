@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{APP_NAME}} | GiveTex</title>
+<meta name="description" content="{{DESCRIPTION}}">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/apps/assets/apps.css">
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <a href="/" class="logo">Give<span>Tex</span></a>
+    <nav>
+      <a href="/">記事一覧</a>
+      <a href="/apps/">アプリ</a>
+      <a href="/about.html">このサイトについて</a>
+      <a href="/privacy.html">プライバシーポリシー</a>
+    </nav>
+  </div>
+</header>
+
+<div class="content">
+<p class="crumbs"><a href="/">GiveTex</a> › <a href="/apps/">アプリ</a> › {{APP_NAME}}</p>
+<div class="hero">
+  <img src="/apps/{{SLUG}}/images/icon-large.jpg" width="120" height="120" alt="{{APP_NAME}}のアイコン" style="border-radius:22px;">
+  <p class="meta">{{TAGLINE}}</p>
+</div>
+
+<p>{{INTRO}}</p>
+
+<h2>画面イメージ</h2>
+<p class="meta">※ 公開後に追加予定。</p>
+
+<h2>遊び方</h2>
+<ul>
+{{HOW_TO_PLAY}}
+</ul>
+
+<h2>アプリの情報</h2>
+<table class="info">
+<tr><th>対応端末</th><td>iPhone・iPad</td></tr>
+<tr><th>料金</th><td>{{PRICE}}</td></tr>
+<tr><th>ジャンル</th><td>{{GENRE}}</td></tr>
+<tr><th>データ</th><td>アカウント登録は不要です。</td></tr>
+<tr><th>対象年齢</th><td>{{AGE_NOTE}}</td></tr>
+<tr><th>配信</th><td>App Store（準備中）</td></tr>
+</table>
+
+<h2>ページ一覧</h2>
+<a class="card" href="/apps/{{SLUG}}/support/">
+  <strong>サポート</strong>
+  <span>お問い合わせ、よくある質問</span>
+</a>
+<a class="card" href="/apps/{{SLUG}}/privacy/">
+  <strong>プライバシーポリシー</strong>
+  <span>情報の取り扱い</span>
+</a>
+</div>
+
+<footer>
+  <p>&copy; 2026 GiveTex. All rights reserved.</p>
+</footer>
+</body>
+</html>
