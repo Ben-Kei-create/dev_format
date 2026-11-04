@@ -18,7 +18,8 @@
 8. 名前、アイコン、スクリーンショット、説明文: 他アプリと酷似していないか、商標や誤認の恐れ、実画面と一致するか
 9. 実機/TestFlight での最終動作、iPhone/iPad 両方、クラッシュ、起動時間
 10. Apple の質問1〜9に、そのまま返信できる回答案を作成
-11. 個人情報がコミットに含まれていないか(申請キットは、このチェックに通過してから `appstore/submission_kit_instructions.md` で作る)
+11. 起動時アニメーションの確認項目(`modes/launch_animation.md`): 総時間、スキップ、Reduce Motion、容量
+12. 個人情報がコミットに含まれていないか(申請キットは、このチェックに通過してから `appstore/submission_kit_instructions.md` で作る)
 
 ## 出力
 - 提出して良いか(可/不可)とその理由

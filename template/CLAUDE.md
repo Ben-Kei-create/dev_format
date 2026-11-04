@@ -19,6 +19,7 @@
    (ExperiencePoints → ダイス `randomdice.md` → 3つの質問 `modes/custom_mode.md` → アイコン用プロンプト `modes/icon_prompt.md` → 設計書の再設計)。
    続けて `1_planning.md` と `1b_growth.md`。
 2. **実装**: 画面デザイン(アイコン、ホーム、代表的な操作画面)を確定してから入る。実装完了とリリース完了は区別する。
+   起動時アニメーションは、他の実装が全て済んでから最後に作る(`modes/launch_animation.md`。指示がなければパラパラ漫画方式。画像の指示プロンプトも出す)。
 3. **開発中**: `2_development.md` と `2b_edge_cases.md`。TestFlight を始める。区切りで Codex レビュー(`codex_review.md`)。
 4. **提出前**: `3_submission.md`。通過してから `appstore/kit.md` を作る(`appstore/submission_kit_instructions.md`、固有値は `appstore/app_input.md`)。
 5. **申請後**: `ExperiencePoints.md` への追記候補をオーナーに見せる。
