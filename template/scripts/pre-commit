@@ -4,6 +4,9 @@ set -euo pipefail
 root="$(git rev-parse --show-toplevel)"
 fail=0
 
+# 期限切れの kit_filled.md を削除しておく
+[ -x "$root/scripts/cleanup_private.sh" ] && "$root/scripts/cleanup_private.sh" --stale >/dev/null 2>&1 || true
+
 # 1) private/ 配下のファイルがステージされていないか(見本 *.example.md は除く)
 bad="$(git diff --cached --name-only | grep -E '^private/' | grep -vE '^private/[^/]*\.example\.md$' || true)"
 if [ -n "$bad" ]; then

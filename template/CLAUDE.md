@@ -13,3 +13,6 @@
   実値は `private/owner_info.md`(.gitignore 済み)にだけ置く。コミット前に `git diff --cached` で確認する。
 - App Store Connect の申請準備は `appstore/submission_kit_instructions.md` に従い、アプリ固有の値は `appstore/app_input.md` に書く。
 - 申請用のコピペリスト `appstore/kit.md` は、審査チェックの段階1〜3が全て通過してから作る。個人情報は `{{キー}}` で書き、実値は `./scripts/fill_private.sh` で `private/` に出力する(コミットしない)。
+- `private/` 配下(owner_info.md、kit_filled.md)は、読まない・表示しない・チャットに貼らない。中身が必要な作業は、スクリプトに任せ、AI は中身を見ない。
+- セッション開始時に `./scripts/cleanup_private.sh --stale` を実行し、期限切れの `private/kit_filled.md` を削除する。
+- `kit_filled.md` を作ったら、必ず「申請は済みましたか?」と確認する。「済んだ」と答えたら、すぐ `./scripts/cleanup_private.sh --now` で削除する。確認が取れない場合も、期限(既定180分)で自動削除されるため、そのまま放置せず、次のセッションでも再度確認する。

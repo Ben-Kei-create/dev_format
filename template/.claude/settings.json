@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(./private/**)",
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Bash(cat private/*)",
+      "Bash(cat ./private/*)",
+      "Bash(less private/*)",
+      "Bash(head private/*)",
+      "Bash(tail private/*)",
+      "Bash(grep * private/*)"
+    ]
+  }
+}

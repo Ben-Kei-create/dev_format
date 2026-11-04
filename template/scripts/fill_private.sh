@@ -4,6 +4,8 @@
 # private/kit_filled.md を作る(private/ はコミットされない)。
 set -euo pipefail
 cd "$(dirname "$0")/.."
+umask 077
+./scripts/cleanup_private.sh --stale >/dev/null || true
 python3 -I - <<'PY'
 import re, sys, pathlib
 info = pathlib.Path("private/owner_info.md")
@@ -26,3 +28,9 @@ pathlib.Path("private/kit_filled.md").write_text(out, encoding="utf-8")
 print("作成: private/kit_filled.md(コミットされません)")
 if missing: print("未入力のキー: " + "、".join(sorted(missing)))
 PY
+chmod 600 private/kit_filled.md
+# 期限が来たら自動で削除する(この端末が起動している間だけ有効。取りこぼしは次回の実行で削除される)
+ttl_sec="${KIT_TTL_SEC:-$(( ${KIT_TTL_MIN:-180} * 60 ))}"
+(nohup bash -c "sleep $ttl_sec; ./scripts/cleanup_private.sh --stale >/dev/null 2>&1" >/dev/null 2>&1 &) || true
+echo "申請が済んだら: ./scripts/cleanup_private.sh --now"
+echo "済んだか確認できなくても、$(( ttl_sec / 60 )) 分後に自動で削除されます(必要なら再生成できます)。"
