@@ -10,7 +10,7 @@
 - `ExperiencePoints.md`: 開発で得た知見をためる場所。申請完了後に、選別して更新する(唯一更新してよいファイル)
 - `randomdice.md`: 設計の依存度をダイスで決める仕組み(`scripts/roll_dice.sh`、`scripts/roll_research.sh`)
 - `workflow/`: コマンド・スキル・モデルの使い分けガイド(品質とトークン節約)
-- `philosophy/`: オーナーの開発思想、デザイン共通原則、技術・設計の標準方針
+- `philosophy/`: オーナーの開発思想、デザイン共通原則、固定フォント、技術・設計の標準方針
 - `growth/`: 初回リリース・差別化のプレイブック(自分用)
 - `appstore/`: App Store Connect 申請キット作成指示書、アプリ固有の入力欄
 - `scripts/pre-commit`: メール・電話番号らしい文字列や `private/` のファイルを含むコミットを中止する
