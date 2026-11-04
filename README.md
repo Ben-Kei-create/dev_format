@@ -6,7 +6,7 @@
 - `CLAUDE.md`: Claude Code が起動時に読む開発ルール
 - `review_prompts/`: 審査チェック指示文(1 企画時 / 2 開発中 / 3 提出前)
 - `docs/`: 詳細設計書(依頼メモ)、逸脱ログ、想定外バグ/ユーザー記録、開発ログ、競合メモ、TestFlight 記録、審査返信の下書き
-- `randomdice.md`: 設計の依存度をダイスで決める仕組み(`scripts/roll_dice.sh`)
+- `randomdice.md`: 設計の依存度をダイスで決める仕組み(`scripts/roll_dice.sh`、`scripts/roll_research.sh`)
 - `philosophy/`: オーナーの開発思想、デザイン共通原則、技術・設計の標準方針
 - `growth/`: 初回リリース・差別化のプレイブック(自分用)
 - `appstore/`: App Store Connect 申請キット作成指示書、アプリ固有の入力欄
