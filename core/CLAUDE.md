@@ -29,7 +29,7 @@
 
 ※ 末尾の「ストア別ルール」「技術別ルール」は、`setup.sh` が `--store` `--engine` に応じて追記する。
 
-記録先: `docs/devlog.md`(経緯)、`competitor_notes.md`(競合)、`testflight_feedback.md`、`deviation_log.md`(設計からの逸脱)、`edge_cases.md`、`mode_log.md`、`asset_list.md`。
+記録先: `docs/devlog.md`(経緯)、`competitor_notes.md`(競合)、`deviation_log.md`(設計からの逸脱)、`edge_cases.md`、`mode_log.md`、`asset_list.md`。
 
 ## 設計・デザイン
 - 詳細設計書(`docs/design_brief.md`)と参考画像は「出発点」。売れない・埋もれないために、より良い方向があれば採用してよい。
