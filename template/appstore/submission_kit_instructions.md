@@ -173,7 +173,7 @@ TestFlight、成長とマーケティング、Game Center などは、利用時�
 
 ## 12. Xcode / Archive / 提出ビルド
 検証順: プロジェクト・Target → Bundle ID → Team・署名 → Deployment Target → Version/Build → Capabilities → Info.plist・権限の用途説明 → PrivacyInfo.xcprivacy → SDK → 実機動作 → Archive → Validate → Distribute App / アップロード → 処理完了・ビルド選択。
-各工程を「完了/要対応/対象外/検証不能」に分類する。コマンドや操作は、実在のプロジェクトを確認してから示す。バージョンの値とビルドを一致させ、前回のビルド番号との整合を確認する。Archive・アップロードは承認後に行う。TestFlight 専用配布と App Store 審査用の違いも、必要に応じて説明する。
+各工程を「完了/要対応/対象外/検証不能」に分類する。コマンドや操作は、実在のプロジェクトを確認してから示す。バージョンの値とビルドを一致させ、前回のビルド番号との整合を確認する。**Archive・アップロードは、オーナーが実装完了を宣言し、承認してから行う。実装が終わっていない段階では、提案もしない。**TestFlight 専用配布と App Store 審査用の違いも、必要に応じて説明する。
 
 ## 13. 進捗時の出力と最終品質ゲート
 準備中でも、次の順に回答する。
