@@ -7,7 +7,7 @@
 - `review_prompts/`: 審査・品質チェック指示文(0 受け取り / 1 企画 / 2 開発中 / 3 提出前 / ChatGPT・Codex レビュー / 既存アプリ)
 - `docs/`: 詳細設計書(依頼メモ)、逸脱ログ、想定外バグ/ユーザー記録、開発ログ、競合メモ、TestFlight 記録、審査返信の下書き
 - `web/`: 公開ページ(紹介・サポート・プライバシー)の雛形。GiveTeX サイト用
-- `modes/`: カスタムモード(Era / Rule / Voice の3つの質問)、アイコン用プロンプト、画像素材の依頼形式、起動時アニメーション
+- `modes/`: カスタムモード(Era / Rule / Voice の3つの質問)、アイコン用プロンプト、画像素材の依頼形式、起動時アニメーション、音声
 - `ExperiencePoints.md`: 開発で得た知見をためる場所。申請完了後に、選別して更新する(唯一更新してよいファイル)
 - `randomdice.md`: 設計の依存度をダイスで決める仕組み(`scripts/roll_dice.sh`、`scripts/roll_research.sh`)
 - `marketing/`: X(既定 @AIJAPANE)での TestFlight 募集・宣伝のプレイブックと投稿の雛形
