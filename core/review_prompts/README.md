@@ -1,5 +1,7 @@
 # 審査・品質チェック指示文
 
+※ 段階1・2・3(`1_planning.md`、`2_development.md`、`3_submission.md`)は、ストア別のファイル(`stores/<ストア>/review_prompts/`)。`setup.sh` が同じ `review_prompts/` に入れる。
+
 各段階の指示文を Claude Code に貼って使う。`【】` を埋める。
 判定が「低」なら、次の段階に進まず計画や実装を直す。ダイスや縛りは設計の中身だけに効き、これらのチェックには効かない。
 

@@ -8,8 +8,6 @@
 - 個人情報(姓名、メール、電話、住所、パスワード、鍵・トークン)は、コミット・PR・公開ページ・チャットに決して書かない。
   申請キットでは、姓名・メールは「本人が手入力」とし、電話番号は `+81 XXXXXXXXXX` の形にする。
 - 各段階の判定が「低」なら、次に進まず、まずオーナーに報告する。
-- 審査への返信文・Apple の質問への回答案は、**Apple から実際のメッセージが届き、オーナーが文面を渡した時だけ**作る。未申請のアプリでは作らない・雛形(`appstore/after_review/`)を埋めない。提出時の「審査メモ」は別物で、提出前チェックに通過してから作る。
-- **実装完了(起動アニメーションを含む)をオーナーが宣言するまで、App Store 提出用の Archive・アップロード・App Store Connect の操作に触れない。提案もしない。** TestFlight 配布用のビルドは、オーナーが明示的に指示した時だけ(`workflow/testflight.md`)。「申請準備」の話題が出ても、実装が終わっていなければ、先に実装の残りを確認する。
 - 会話: 説明は必要最低限。入力を求める時と、オーナーへの手順の指示だけ丁寧に具体的に。結論から。繰り返さない。
 - (推奨・ルールではない) 会話の約8割は選択肢で進める。質問・確認・次の一手は、おすすめ付きの選択肢(3つのおすすめ + 4つ目はオーナーの自由な指示)で出し、オーナーは番号で答えられるようにする。自由記述を求めるのは、選択肢にできない時(固有の名前、設計の中身、数値など)だけ。
 - コマンド・スキル・モデルは `workflow/command_guide.md` に従う。無関係な作業の前は `/clear`、重くなったら `/compact`。`/code-review max` はオーナーが明示した時だけ。
@@ -19,15 +17,17 @@
 ## 進め方(新規アプリ)
 1. **企画(コードを書く前)**: `review_prompts/0_brief_intake.md`
    (ExperiencePoints → ダイス `randomdice.md` → 3つの質問 `modes/custom_mode.md` → アイコン用プロンプト `modes/icon_prompt.md` → 設計書の再設計)。
-   続けて `1_planning.md` と `1b_growth.md`。
+   続けて `review_prompts/1b_growth.md` と、ストア別の企画チェック(下の「ストア別ルール」)。
 2. **実装**: 画面デザイン(アイコン、ホーム、代表的な操作画面)を確定してから入る。実装完了とリリース完了は区別する。
    起動時アニメーションは、他の実装が全て済んでから最後に作る(`modes/launch_animation.md`。指示がなければパラパラ漫画方式。画像の指示プロンプトも出す)。
-3. **開発中**: `2_development.md` と `2b_edge_cases.md`。オーナーが指示したら TestFlight を始める(`workflow/testflight.md`)。区切りで Codex レビュー(`codex_review.md`)。
-4. **提出前**: `3_submission.md`。通過してから `appstore/kit.md` を作る(`appstore/submission_kit_instructions.md`、固有値は `appstore/app_input.md`)。
+3. **開発中**: `review_prompts/2b_edge_cases.md` と、ストア別の開発中チェック。区切りで Codex レビュー(`review_prompts/codex_review.md`)。テスト配布はオーナーが指示した時だけ。
+4. **提出前**: ストア別の提出前チェック。通過してから、ストア別の申請キットを作る。
 5. **申請後**: `ExperiencePoints.md` への追記候補をオーナーに見せる。
 
 実装が進んでいる、または申請まで済んだアプリを渡された時は、上の代わりに `review_prompts/existing_app.md`
 (ダイスは振らない。診断 → 質問 → 解決するまで対応)。
+
+※ 末尾の「ストア別ルール」「技術別ルール」は、`setup.sh` が `--store` `--engine` に応じて追記する。
 
 記録先: `docs/devlog.md`(経緯)、`competitor_notes.md`(競合)、`testflight_feedback.md`、`deviation_log.md`(設計からの逸脱)、`edge_cases.md`、`mode_log.md`、`asset_list.md`。
 
@@ -46,11 +46,6 @@
 - 音声は `modes/voice_audio.md` に従う(既定: アプリ内の読み上げは OS 標準、事前に作る音声は AivisSpeech の ACML/CC0 モデルを第一候補とする。使う声のライセンスを必ず確認する)。
 - アイコンの書き出しは行わない。
 - アプリアイコンや、アプリ内の他の場面で使ったアニメーション・演出・素材は、なるべく使い回さない(他のアプリの素材も同様)。コードの部品の共通化は可。
-
-## 申請・公開
-- 公開ページは `web/` の雛形から作り、GiveTeX サイトの `apps/{スラッグ}/` に置く(PR → 承認 → マージ)。
-  **申請と同時に(遅くとも申請の前に)本番で公開済みにする。**申請後に作らない(広告と App Store Connect のURL入力のため)。
-- スクリーンショットは `appstore/screenshots.md` に従い、Xcode のシミュレータで撮る。捏造しない。テスト広告・デバッグ表示は写さない。
 
 ## 宣伝(X)
 - 既定の開発者アカウントは https://x.com/AIJAPANE。AI は X を操作できない。TestFlight 募集・開発ログ・ローンチ・返信の下書きとハッシュタグ案を `marketing/` の雛形で作り、`docs/marketing_posts.md` に保存する。投稿はオーナーが行う。
