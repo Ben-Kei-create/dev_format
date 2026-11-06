@@ -18,6 +18,14 @@
       "privacyPolicyUrl": "https://givetex.org/apps/your-slug/privacy/"
     }
   },
+  "screenshots": {
+    "ja": {
+      "(配置グループの識別子。参照データから読む。例: IPHONE_DYNAMIC_ISLAND_LARGE_PROFILE)": [
+        "../../docs/screenshots/iphone/01-home.png",
+        "../../docs/screenshots/iphone/02-play.png"
+      ]
+    }
+  },
   "reviewDetail": {
     "notes": "(審査メモ。review_notes_template.md の6項目。個人情報は入れない)"
   }

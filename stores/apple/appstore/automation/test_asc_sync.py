@@ -1,4 +1,4 @@
-import json, tempfile, unittest, pathlib
+import json, struct, tempfile, unittest, pathlib
 import asc_sync as a
 
 class Fake:
@@ -73,6 +73,115 @@ class T(unittest.TestCase):
             rc = a.main(["apply", str(inp), "--confirm-bundle-id", "com.example.app", "--backup-dir", t], client=f)
             self.assertEqual(rc, 0)
             self.assertTrue([c for c in f.calls if c[0] == "PATCH"])
+
+
+def fake_png(path, w=1290, h=2796, color_type=2):
+    ihdr = struct.pack(">IIBBBBB", w, h, 8, color_type, 0, 0, 0)
+    pathlib.Path(path).write_bytes(b"\x89PNG\r\n\x1a\n" + struct.pack(">I", 13) + b"IHDR" + ihdr + b"\0\0\0\0" + b"x" * 40)
+
+
+class ShotFake(Fake):
+    def __init__(self, existing=None, fail_state=False):
+        super().__init__()
+        self.existing = existing or []
+        self.uploads = []
+        self.fail_state = fail_state
+        self.n = 0
+    def upload(self, method, url, headers, data):
+        self.uploads.append((method, headers, len(data)))
+    def request(self, method, path, params=None, body=None):
+        if path == "/v1/apps/A1/assetLibrary": self.calls.append((method, path, params, body)); return {"data": {"id": "LIB1"}}
+        if path == "/v1/appAssetLibraryRefData":
+            self.calls.append((method, path, params, body))
+            return {"data": [{"attributes": {"placementProfileGroups": [{"id": "G1"}],
+                    "imageSpecs": [{"dimensions": {"minWidth": 1290, "maxWidth": 1290, "minHeight": 2796, "maxHeight": 2796},
+                                    "compatiblePlacementTypes": ["APP_SCREENSHOT"]}]}}]}
+        if path == "/v1/appStoreVersionLocalizations/L1/placements":
+            self.calls.append((method, path, params, body)); return {"data": [{"id": x} for x in self.existing]}
+        if path == "/v1/appAssetLibraryImages" and method == "POST":
+            self.calls.append((method, path, params, body)); self.n += 1
+            size = body["data"]["attributes"]["fileSize"]
+            return {"data": {"id": f"IMG{self.n}", "attributes": {"uploadOperations": [
+                {"method": "PUT", "url": "https://upload.invalid/x", "length": size, "offset": 0,
+                 "requestHeaders": [{"name": "Content-Type", "value": "image/png"}]}]}}}
+        if path.startswith("/v1/appAssetLibraryImages/") and method == "PATCH": self.calls.append((method, path, params, body)); return {}
+        if path.startswith("/v1/appAssetLibraryImages/") and method == "GET":
+            self.calls.append((method, path, params, body))
+            return {"data": {"attributes": {"state": "FAILED" if self.fail_state else "PREPARE_FOR_SUBMISSION", "stateDetails": "bad"}}}
+        if path == "/v1/appAssetLibraryPlacements" and method == "POST":
+            self.calls.append((method, path, params, body)); return {"data": {"id": f"P{self.n}"}}
+        if path.startswith("/v1/appAssetLibraryPlacements/") and method == "DELETE": self.calls.append((method, path, params, body)); return {}
+        if path == "/v1/appAssetLibraryPlacementOrderingRequests": self.calls.append((method, path, params, body)); return {"data": {"id": "O1"}}
+        return super().request(method, path, params, body)
+
+
+class S(unittest.TestCase):
+    def setUp(self):
+        self.t = tempfile.TemporaryDirectory(); self.dir = pathlib.Path(self.t.name)
+        fake_png(self.dir / "a.png"); fake_png(self.dir / "b.png")
+    def tearDown(self): self.t.cleanup()
+    def data(self, files=("a.png", "b.png")):
+        return dict(BASE, screenshots={"ja": {"G1": list(files)}})
+    def test_validate_shot_ext_and_limit(self):
+        e = "\n".join(a.validate(dict(BASE, screenshots={"ja": {"G1": ["x.gif"]}})))
+        self.assertIn(".png", e)
+        e = "\n".join(a.validate(dict(BASE, screenshots={"ja": {"G1": [f"{i}.png" for i in range(11)]}})))
+        self.assertIn("上限", e)
+    def test_plan_reads_only_and_lists(self):
+        f = ShotFake(); p = a.build_plan(f, self.data(), self.dir)
+        self.assertTrue(all(c[0] == "GET" for c in f.calls))
+        self.assertEqual(len(p["screenshots"][0]["files"]), 2)
+    def test_plan_rejects_alpha(self):
+        fake_png(self.dir / "c.png", color_type=6)
+        with self.assertRaises(a.SyncError) as cm:
+            a.build_plan(ShotFake(), self.data(("c.png",)), self.dir)
+        self.assertIn("アルファ", str(cm.exception))
+    def test_plan_rejects_wrong_size(self):
+        fake_png(self.dir / "d.png", 100, 100)
+        with self.assertRaises(a.SyncError) as cm:
+            a.build_plan(ShotFake(), self.data(("d.png",)), self.dir)
+        self.assertIn("100x100", str(cm.exception))
+    def test_plan_rejects_unknown_group(self):
+        d = dict(BASE, screenshots={"ja": {"UNKNOWN": ["a.png"]}})
+        with self.assertRaises(a.SyncError) as cm:
+            a.build_plan(ShotFake(), d, self.dir)
+        self.assertIn("UNKNOWN", str(cm.exception))
+    def test_apply_flow_order(self):
+        f = ShotFake(); p = a.build_plan(f, self.data(), self.dir)
+        f.calls.clear()
+        done = a.apply_screenshots(f, p, "LIB1", False, sleep=lambda s: None)
+        self.assertEqual(done, [("ja", "G1", 2)])
+        kinds = [(c[0], c[1].split("/")[1] + "/" + (c[1].split("/")[2] if len(c[1].split("/")) > 2 else "")) for c in f.calls]
+        posts = [c for c in f.calls if c[0] == "POST"]
+        self.assertEqual([c[1] for c in posts], ["/v1/appAssetLibraryImages", "/v1/appAssetLibraryPlacements"] * 2 + ["/v1/appAssetLibraryPlacementOrderingRequests"])
+        self.assertEqual(len(f.uploads), 2)
+        order = posts[-1][3]["data"]["relationships"]["orderedPlacements"]["data"]
+        self.assertEqual([x["id"] for x in order], ["P1", "P2"])
+        self.assertEqual(posts[0][3]["data"]["attributes"]["category"], "APP_SCREENSHOTS_AND_PREVIEWS")
+        self.assertEqual(posts[1][3]["data"]["attributes"]["placementType"], "APP_SCREENSHOT")
+    def test_apply_refuses_existing_without_flag(self):
+        f = ShotFake(existing=["OLD1"]); p = a.build_plan(f, self.data(), self.dir)
+        f.calls.clear()
+        with self.assertRaises(a.SyncError):
+            a.apply_screenshots(f, p, "LIB1", False, sleep=lambda s: None)
+        self.assertFalse([c for c in f.calls if c[0] in ("POST", "DELETE")])
+    def test_apply_deletes_existing_with_flag(self):
+        f = ShotFake(existing=["OLD1"]); p = a.build_plan(f, self.data(("a.png",)), self.dir)
+        a.apply_screenshots(f, p, "LIB1", True, sleep=lambda s: None)
+        self.assertIn(("DELETE", "/v1/appAssetLibraryPlacements/OLD1"), [(c[0], c[1]) for c in f.calls])
+    def test_failed_processing_stops(self):
+        f = ShotFake(fail_state=True); p = a.build_plan(f, self.data(("a.png",)), self.dir)
+        with self.assertRaises(a.SyncError) as cm:
+            a.apply_screenshots(f, p, "LIB1", False, sleep=lambda s: None)
+        self.assertIn("処理に失敗", str(cm.exception))
+        self.assertFalse([c for c in f.calls if c[1] == "/v1/appAssetLibraryPlacements" and c[0] == "POST"])
+    def test_main_blocks_delete_before_any_write(self):
+        inp = self.dir / "in.json"; inp.write_text(json.dumps(dict(self.data(("a.png",)), versionLocalizations={"ja": {"description": "new"}})))
+        f = ShotFake(existing=["OLD1"])
+        rc = a.main(["apply", str(inp), "--confirm-bundle-id", "com.example.app", "--backup-dir", str(self.dir)], client=f)
+        self.assertEqual(rc, 1)
+        self.assertFalse([c for c in f.calls if c[0] in ("PATCH", "POST", "DELETE")])
+
 
 if __name__ == "__main__":
     unittest.main()

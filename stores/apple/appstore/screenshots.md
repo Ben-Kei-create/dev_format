@@ -27,6 +27,9 @@
 5. 言語・外観を揃える。ライト/ダークは、アプリの系統に合う方に統一する(両方出すなら、同じ枚数で揃える)。
 6. 保存: `docs/screenshots/{デバイス}/01-home.png` のように、連番と内容名を付ける。
 
+## 自動アップロード
+`appstore/automation/` の `screenshots` で、API からアップロードできる(App Asset Library。承認の関所つき)。寸法・形式は `GET /v1/appAssetLibraryRefData` の仕様が正で、ハードコードしない。
+
 ## 構成(推奨)
 1. 何のアプリで誰向けかが一目で分かる画面(1枚目が最重要)
 2. 主要機能

@@ -13,8 +13,8 @@
 - アイコンは 512×512 px の PNG、短い説明は 80 文字、フィーチャーグラフィックは必須(Google ヘルプ)。
 - Repetitive Content: 機能・内容・体験が高度に似た複数アプリは、ポリシー違反となり得る。
 
-## 自動入力(第2段階・未実装)
-データセーフティの書き込み API があることを確認済み(`applications.dataSafety`)。実装する時は、Apple と同じ関所を守る(`stores/apple/appstore/automation/README.md`)。
+## 自動入力(実装済み・実 API では未実行)
+`playstore/automation/`(掲載情報、画像、データセーフティ。承認の関所つき)。
 
 ## 未整備・未確認
 - Android App Bundle の要件、開発者アカウントの登録料と本人確認、審査にかかる日数: 公式で確認する。

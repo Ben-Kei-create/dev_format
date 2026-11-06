@@ -1,0 +1,18 @@
+{
+  "packageName": "com.example.yourapp",
+  "listings": {
+    "ja-JP": {
+      "title": "(アプリ名)",
+      "shortDescription": "(短い説明。80文字以内)",
+      "fullDescription": "(詳しい説明。kit.md と同じ内容)"
+    }
+  },
+  "images": {
+    "ja-JP": {
+      "phoneScreenshots": ["../../docs/screenshots/android/01-home.png"],
+      "icon": ["../../docs/icon-512.png"],
+      "featureGraphic": ["../../docs/feature-graphic.png"]
+    }
+  },
+  "dataSafety": { "csvPath": "../../docs/data_safety.csv" }
+}

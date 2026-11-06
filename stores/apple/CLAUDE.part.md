@@ -2,7 +2,7 @@
 ## ストア別ルール: Apple(App Store)
 - 審査への返信文・Apple の質問への回答案は、**Apple から実際のメッセージが届き、オーナーが文面を渡した時だけ**作る。未申請のアプリでは作らない・雛形(`appstore/after_review/`)を埋めない。提出時の「審査メモ」(`appstore/review_notes_template.md`)は別物で、提出前チェックに通過してから作る。
 - **実装完了(起動アニメーションを含む)をオーナーが宣言するまで、App Store 提出用の Archive・アップロード・App Store Connect の操作に触れない。提案もしない。** TestFlight 配布用のビルドは、オーナーが明示的に指示した時だけ(`workflow/testflight.md`)。
-- **申請内容の自動入力**(`appstore/automation/README.md`): オーナーが API の実行を明示的に指示した時だけ。**作る → `plan`(読み取りのみ)で差分を見せる → オーナーが会話で明確に OK → `apply`。審査への提出は行わない(手動)。**姓名・メール・電話などの個人情報、App Privacy、レコード作成、ビルドのアップロードは対象外(手動)。API の鍵(.p8、Key ID、Issuer ID)は、コミットもチャット貼り付けもしない。クラウドのセッションでは使わない(Mac 上のセッションのみ)。
+- **申請内容の自動入力**(`appstore/automation/README.md`): オーナーが API の実行を明示的に指示した時だけ。**作る → `plan`(読み取りのみ)で差分を見せる → オーナーが会話で明確に OK → `apply`。審査への提出は行わない(手動)。**姓名・メール・電話などの個人情報、App Privacy、レコード作成、ビルドのアップロードは対象外(手動)。スクリーンショットは App Asset Library で対応(既存の置き換えは `--allow-delete-placements` が必要)。API の鍵(.p8、Key ID、Issuer ID)は、コミットもチャット貼り付けもしない。クラウドのセッションでは使わない(Mac 上のセッションのみ)。
 - 企画: `review_prompts/1_planning.md`(4.3 重複・スパム、4.2.6 テンプレート、4.2 最小機能)。
 - 開発中: `review_prompts/2_development.md`。オーナーが指示したら TestFlight を始める(`workflow/testflight.md`)。
 - 提出前: `review_prompts/3_submission.md`。通過してから `appstore/kit.md` を作る(`appstore/submission_kit_instructions.md`、固有値は `appstore/app_input.md`)。
