@@ -9,7 +9,7 @@ dev_format/
 ├─ core/            共通(全アプリ・全ストア・全技術で使う)
 ├─ stores/
 │   ├─ apple/       App Store(審査チェック、申請キット、TestFlight、スクリーンショット)
-│   └─ google-play/ 未整備
+│   └─ google-play/ 初版(クローズドテスト、掲載情報、宣言、審査チェック)
 ├─ engines/
 │   ├─ swiftui/     SwiftUI(iPhone / macOS)
 │   ├─ godot/       未整備
