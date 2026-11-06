@@ -13,7 +13,7 @@
 ## 進め方(新規アプリ)
 1. **企画**: `review_prompts/0_brief_intake.md`(ExperiencePoints → ダイス `randomdice.md` → 3つの質問 `modes/custom_mode.md` → アイコン用プロンプト `modes/icon_prompt.md` → 設計書の再設計)。続けて `1b_growth.md` と、ストア別の企画チェック。
 2. **実装**: 画面デザイン(アイコン、ホーム、代表的な操作画面)を確定してから。実装完了とリリース完了は区別する。起動アニメーションは最後(`modes/launch_animation.md`)。
-3. **開発中**: `2b_edge_cases.md` とストア別の開発中チェック。区切りで `codex_review.md`。テスト配布はオーナーが指示した時だけ。
+3. **開発中**: `2b_edge_cases.md` とストア別の開発中チェック。区切りで `codex_review.md`。テスト配布はオーナーが指示した時だけ。**テストの案内ページとリンクは、申請が済んでいない間、必ず GiveTeX に載せる**(`web/README.md`)。
 4. **提出前**: ストア別の提出前チェック → 通過後に申請キット。
 5. **申請後**: `ExperiencePoints.md` への追記候補を見せる。
 

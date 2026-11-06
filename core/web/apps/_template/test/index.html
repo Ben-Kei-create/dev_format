@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>{{APP_NAME}} テスター募集 | GiveTex</title>
+<meta name="description" content="{{APP_NAME}}のテスターを募集しています。参加方法と、見てほしい点のご案内です。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/apps/assets/apps.css">
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <a href="/" class="logo">Give<span>Tex</span></a>
+    <nav>
+      <a href="/">記事一覧</a>
+      <a href="/apps/">アプリ</a>
+      <a href="/about.html">このサイトについて</a>
+      <a href="/privacy.html">プライバシーポリシー</a>
+    </nav>
+  </div>
+</header>
+
+<div class="content">
+<p class="crumbs"><a href="/">GiveTex</a> › <a href="/apps/">アプリ</a> › <a href="/apps/{{SLUG}}/">{{APP_NAME}}</a> › テスター募集</p>
+<h1>{{APP_NAME}} テスター募集</h1>
+<p class="meta">{{TEST_STATUS}}（公開前のテストです）</p>
+
+<p>{{INTRO}}</p>
+
+<h2>参加方法</h2>
+<ul>
+{{JOIN_STEPS}}
+</ul>
+<p>{{JOIN_LINKS}}</p>
+
+<h2>見てほしい点</h2>
+<ul>
+{{CHECK_POINTS}}
+</ul>
+
+<h2>期間と人数</h2>
+<table class="info">
+<tr><th>期間</th><td>{{TEST_PERIOD}}</td></tr>
+<tr><th>募集人数</th><td>{{TEST_COUNT}}</td></tr>
+<tr><th>対応端末</th><td>{{TEST_DEVICES}}</td></tr>
+</table>
+
+<h2>ご意見の送り方</h2>
+<p>{{FEEDBACK_HOW}}</p>
+<p>お名前、メールアドレス、住所などの個人情報は、書かないでください。</p>
+<p>お問い合わせ：<strong>contact[at]givetex.org</strong>（[at] を @ に置き換えてください）</p>
+
+<h2>注意</h2>
+<ul>
+<li>公開前のバージョンです。動作が不安定な場合や、内容が変わる場合があります。</li>
+<li>広告が表示される場合でも、広告をタップする必要はありません。</li>
+<li>テストで集めたご意見は、アプリの改善のために使います。個人が特定される形で公開することはありません。</li>
+</ul>
+
+<h2>関連ページ</h2>
+<ul>
+<li><a href="/apps/{{SLUG}}/">アプリの紹介</a></li>
+<li><a href="/apps/{{SLUG}}/privacy/">プライバシーポリシー</a></li>
+<li><a href="/apps/{{SLUG}}/support/">サポート</a></li>
+</ul>
+</div>
+
+<footer>
+  <p>&copy; 2026 GiveTex. All rights reserved.</p>
+</footer>
+</body>
+</html>
