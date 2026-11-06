@@ -26,6 +26,7 @@
       ]
     }
   },
+  "price": { "baseTerritory": "JPN", "customerPrice": "0.0", "startDate": null },
   "ageRating": {
     "(属性名は README の一覧。現在の回答にある属性だけ)": "NONE",
     "gambling": false

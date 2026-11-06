@@ -23,13 +23,17 @@ dev_format/
 - `modes/`(Era / Rule / Voice の3つの質問、アイコン用プロンプト、画面デザインの参考画像(インタビュー形式)、画像素材の依頼、起動アニメーション、音声)
 - `review_prompts/`(0 受け取り、1b 差別化、2b 想定外、Codex レビュー、既存アプリ診断、`external/`=ChatGPT・Codex 向けレビュー指示)
 - `marketing/`(X での宣伝。既定 @AIJAPANE)、`web/`(公開ページの雛形。GiveTeX 用)、`workflow/`(コマンド・スキル・モデルの使い分け、使うツール・素材のカタログ)
-- `docs/`(記録の雛形)、`scripts/`(ダイス、pre-commit)、`.gitignore`
+- `docs/`(記録の雛形)、`scripts/`(ダイス、pre-commit=個人情報・鍵の混入を止める)、`.gitignore`
 
 ### stores/apple/
 - `CLAUDE.part.md`(Apple 固有のルール)
 - `review_prompts/`(1 企画、2 開発中、3 提出前)
-- `appstore/`(申請キット指示書、審査メモの雛形、スクリーンショット手順、`after_review/`=Apple から実際のメッセージが届いた時だけ使う返信の雛形)
+- `appstore/`(申請キット指示書(入口 + `kit/` の9部品)、審査メモの雛形、スクリーンショット手順、`after_review/`=Apple から実際のメッセージが届いた時だけ使う返信の雛形、`automation/`=App Store Connect API への自動入力(テキスト・年齢制限・価格の初回設定・スクリーンショット。承認の関所つき))
 - `workflow/testflight.md`、`docs/testflight_feedback.md`
+
+### stores/google-play/
+- `CLAUDE.part.md`、`review_prompts/`(1・2・3)、`workflow/closed_testing.md`(個人アカウントの 12 人・14 日)
+- `playstore/`(掲載情報の申請キット、宣言とデータセーフティ、スクリーンショット、`automation/`=Google Play Developer API への自動入力(掲載情報・画像・データセーフティ。承認の関所つき))
 
 ### engines/swiftui/
 - `CLAUDE.part.md`(SwiftUI 固有のルール)

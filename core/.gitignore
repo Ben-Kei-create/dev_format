@@ -3,7 +3,13 @@ private/*
 !private/*.example.md
 *.p8
 *.p12
+*.pem
+*.key
 *.mobileprovision
+AuthKey_*
+service-account*.json
+*service_account*.json
+*credentials*.json
 .env
 .env.*
 

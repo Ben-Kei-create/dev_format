@@ -37,7 +37,7 @@
 - **募集投稿のリンク先は、GiveTeX のテストの案内ページ**(`web/apps/_template/test/`)。案内ページは、申請が済んでいない間、必ず載せる。
 - 公開リンクを使うと、メールを集めずに募集できる(App Store Connect の TestFlight で作る。外部テストは Beta App Review が必要な場合がある)。
 - 募集文に書く: 何のアプリか(一言)、テストしてほしい点(1〜2個)、期間(1〜2週間)、フィードバックの方法(返信 / フォーム)。
-- 集まった意見は `docs/testflight_feedback.md` に記録し、反映した修正を返信で報告する(審査の質問4の材料にもなる)。
+- 集まった意見は テストの記録(Apple: `docs/testflight_feedback.md`、Google Play: `docs/closed_test_feedback.md`)に記録し、反映した修正を返信で報告する(審査の質問4の材料にもなる)。
 - テスターの個人情報(メール、名前)を、投稿や記録にそのまま書かない。
 
 ## 守ること

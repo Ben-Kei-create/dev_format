@@ -16,6 +16,22 @@ class Fake:
         if path == "/v1/appInfos/I1/ageRatingDeclaration":
             return {"data": {"id": "AR1", "attributes": {"alcoholTobaccoOrDrugUseOrReferences": "NONE", "gambling": False,
                                                           "unrestrictedWebAccess": True, "kidsAgeBand": None}}}
+        if path == "/v1/apps/A1/appPricePoints":
+            self.calls.append((method, path, params, body))
+            return {"data": [{"id": "PP0", "attributes": {"customerPrice": "0.0"}}, {"id": "PP1", "attributes": {"customerPrice": "160.0"}}],
+                    "links": {"next": "https://api.appstoreconnect.apple.com/v1/apps/A1/appPricePoints?cursor=X&limit=200"}}
+        if path.startswith("/v1/apps/A1/appPricePoints?cursor="):
+            self.calls.append((method, path, params, body))
+            return {"data": [{"id": "PP2", "attributes": {"customerPrice": "320.0"}}], "links": {}}
+        if path == "/v1/apps/A1/appPriceSchedule":
+            self.calls.append((method, path, params, body))
+            if getattr(self, "no_schedule", True): raise a.SyncError("GET ... が失敗しました(HTTP 404): none")
+            return {"data": {"id": "S1"}}
+        if path == "/v1/appPriceSchedules/S1/manualPrices":
+            self.calls.append((method, path, params, body))
+            return {"data": [{"relationships": {"appPricePoint": {"data": {"id": "PP1"}}}}],
+                    "included": [{"type": "appPricePoints", "id": "PP1", "attributes": {"customerPrice": "160.0"}}]}
+        if path == "/v1/appPriceSchedules" and method == "POST": self.calls.append((method, path, params, body)); return {}
         if path == "/v1/appStoreVersions/V1/appStoreReviewDetail": return {"data": {"id": "R1", "attributes": {"notes": "n0"}}}
         if method == "PATCH": return {}
         raise AssertionError(path)
@@ -149,6 +165,53 @@ class A(unittest.TestCase):
     def test_plan_read_only_and_show(self):
         f = Fake(); p = a.build_plan(f, dict(BASE, ageRating={"gambling": True, "kidsAgeBand": "FIVE_AND_UNDER"}))
         self.assertTrue(all(c[0] == "GET" for c in f.calls)); a.show_plan(p)
+
+
+class P(unittest.TestCase):
+    P160 = {"baseTerritory": "JPN", "customerPrice": "160.0"}
+    def test_validate_price(self):
+        self.assertEqual(a.validate(dict(BASE, price=self.P160)), [])
+        for bad in ({"baseTerritory": "jp", "customerPrice": "1"}, {"baseTerritory": "JPN", "customerPrice": 160},
+                    {"baseTerritory": "JPN", "customerPrice": "-1"}, {"baseTerritory": "JPN"},
+                    {"baseTerritory": "JPN", "customerPrice": "1", "startDate": "x"}, {"baseTerritory": "JPN", "customerPrice": "1", "extra": 1}):
+            self.assertTrue(a.validate(dict(BASE, price=bad)), bad)
+    def test_price_point_found_across_pages(self):
+        p = a.build_plan(Fake(), dict(BASE, price={"baseTerritory": "JPN", "customerPrice": "320"}))
+        self.assertEqual(p["price"]["pricePointId"], "PP2"); self.assertEqual(p["price"]["action"], "set")
+    def test_price_point_missing_suggests_nearest(self):
+        with self.assertRaises(a.SyncError) as cm:
+            a.build_plan(Fake(), dict(BASE, price={"baseTerritory": "JPN", "customerPrice": "170"}))
+        self.assertIn("160", str(cm.exception))
+    def test_plan_is_read_only_and_set(self):
+        f = Fake(); p = a.build_plan(f, dict(BASE, price=self.P160))
+        self.assertTrue(all(c[0] == "GET" for c in f.calls)); self.assertEqual(p["price"]["action"], "set"); self.assertIsNone(p["price"]["current"])
+    def test_same_price_is_noop(self):
+        f = Fake(); f.no_schedule = False
+        self.assertEqual(a.build_plan(f, dict(BASE, price=self.P160))["price"]["action"], "none")
+    def test_changing_existing_price_refused(self):
+        f = Fake(); f.no_schedule = False
+        with self.assertRaises(a.SyncError) as cm:
+            a.build_plan(f, dict(BASE, price={"baseTerritory": "JPN", "customerPrice": "0.0"}))
+        self.assertIn("未対応", str(cm.exception))
+    def test_confirm_price_ok(self):
+        item = {"territory": "JPN", "customerPrice": "160.0"}
+        self.assertTrue(a.confirm_price_ok(item, "JPN=160")); self.assertTrue(a.confirm_price_ok(item, "JPN=160.0"))
+        for bad in (None, "", "JPN", "USA=160", "JPN=161", "JPN=abc"):
+            self.assertFalse(a.confirm_price_ok(item, bad), bad)
+    def test_main_requires_confirm_price_before_any_write(self):
+        with tempfile.TemporaryDirectory() as t:
+            inp = pathlib.Path(t) / "in.json"
+            inp.write_text(json.dumps(dict(BASE, versionLocalizations={"ja": {"description": "new"}}, price=self.P160)))
+            f = Fake()
+            rc = a.main(["apply", str(inp), "--confirm-bundle-id", "com.example.app", "--backup-dir", t], client=f)
+            self.assertEqual(rc, 1); self.assertFalse([c for c in f.calls if c[0] in ("PATCH", "POST")])
+            rc = a.main(["apply", str(inp), "--confirm-bundle-id", "com.example.app", "--confirm-price", "JPN=160", "--backup-dir", t], client=f)
+            self.assertEqual(rc, 0)
+            post = [c for c in f.calls if c[0] == "POST" and c[1] == "/v1/appPriceSchedules"][0]
+            inc = post[3]["included"][0]
+            self.assertEqual(post[3]["data"]["relationships"]["baseTerritory"]["data"]["id"], "JPN")
+            self.assertEqual(inc["relationships"]["appPricePoint"]["data"]["id"], "PP1")
+            self.assertEqual(inc["attributes"], {"startDate": None, "endDate": None})
 
 
 class S(unittest.TestCase):

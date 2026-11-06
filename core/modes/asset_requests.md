@@ -82,5 +82,5 @@ AI は、必要になった時点で、**ChatGPT に渡すプロンプト・サ�
 ## 記録と確認
 - 依頼した素材は `docs/asset_list.md` に一覧にする(名前、サイズ、置き場所、状態:依頼/受領/組込済)。
 - 受け取った画像は、AI がサイズ・形式・容量・命名を確認し、問題があれば作り直しの指示を出す。
-- ストア用・公開ページ用の画像は、`appstore/screenshots.md` と `web/README.md` に従う。
+- ストア用・公開ページ用の画像は、ストア別のスクリーンショット手順(Apple: `appstore/screenshots.md`、Google Play: `playstore/screenshots.md`)と `web/README.md` に従う。
 - 出所を残す(どのツールで作ったか)。第三者の素材は、出典とライセンスも記録する。

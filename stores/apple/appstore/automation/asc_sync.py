@@ -4,15 +4,15 @@
 - `plan`  : 読み取りのみ(GET)。現在の値との差分を表示する。何も書き込まない。
 - `apply` : オーナーが差分を確認して OK した後にだけ実行する。変更前の値を private/ に保存してから PATCH する。
 - 対象: バージョンの掲載文(説明・キーワード・プロモーション文・サポート/マーケティングURL・新機能)、
-        アプリ情報(名前・サブタイトル・プライバシーポリシーURL)、審査メモ(notes)、年齢制限の回答(ageRatingDeclarations)、スクリーンショット
+        アプリ情報(名前・サブタイトル・プライバシーポリシーURL)、審査メモ(notes)、年齢制限の回答(ageRatingDeclarations)、価格の初回設定(appPriceSchedules)、スクリーンショット
         (App Asset Library: 予約 → アップロード → 確定 → 処理待ち → 配置 → 並び順。従来のセット方式は Apple が非推奨にしたため使わない)。
 - 対象外(手動): アプリのレコード作成、ビルドのアップロード、App Privacy、審査連絡先(姓名・メール・電話)、
-        価格、配信地域、審査への提出。
+        配信地域、既存の価格の変更、審査への提出。価格は新規の設定のみ(二段階の承認が必要)。
 - 認証: 環境変数 ASC_KEY_ID / ASC_ISSUER_ID / ASC_KEY_PATH(.p8 のパス)。鍵はリポジトリに置かない・表示しない。
 - 依存: pip install pyjwt cryptography
 状態: 実際の API では未実行(テストは偽の応答のみ)。最初は必ず `plan` だけを実行すること。
 """
-import argparse, json, os, pathlib, re, struct, sys, time, urllib.error, urllib.parse, urllib.request, datetime
+import argparse, datetime, decimal, json, os, pathlib, re, struct, sys, time, urllib.error, urllib.parse, urllib.request
 
 BASE = "https://api.appstoreconnect.apple.com"
 # 文字数の上限(Apple の仕様。変わり得るので、超過は警告にとどめず、エラーにして止める)
@@ -58,7 +58,7 @@ def validate(data):
     for key in ("bundleId", "versionString"):
         if not isinstance(data.get(key), str) or not data[key]:
             errs.append(f"{key} が必要です")
-    allowed_top = {"bundleId", "versionString", "versionLocalizations", "appInfoLocalizations", "reviewDetail", "screenshots", "ageRating"}
+    allowed_top = {"bundleId", "versionString", "versionLocalizations", "appInfoLocalizations", "reviewDetail", "screenshots", "ageRating", "price"}
     for k in data:
         if k not in allowed_top:
             errs.append(f"未対応のキー: {k}(対象外。手動で入力してください)")
@@ -86,6 +86,21 @@ def validate(data):
             errs.append(f"reviewDetail.{f} は文字列にしてください")
         elif len(v) > REVIEW_FIELDS[f]:
             errs.append(f"reviewDetail.{f} が上限 {REVIEW_FIELDS[f]} 文字を超えています(現在 {len(v)} 文字)")
+    pr = data.get("price")
+    if pr is not None:
+        if not isinstance(pr, dict) or not set(pr) <= {"baseTerritory", "customerPrice", "startDate"} or not {"baseTerritory", "customerPrice"} <= set(pr):
+            errs.append('price は {"baseTerritory": "JPN", "customerPrice": "160.0", "startDate": null} の形にしてください')
+        else:
+            if not (isinstance(pr["baseTerritory"], str) and re.fullmatch(r"[A-Z]{3}", pr["baseTerritory"])):
+                errs.append("price.baseTerritory は3文字の大文字の地域コード(例: JPN, USA)にしてください")
+            try:
+                if not isinstance(pr["customerPrice"], str) or decimal.Decimal(pr["customerPrice"]) < 0:
+                    raise ValueError
+            except (ValueError, decimal.InvalidOperation):
+                errs.append('price.customerPrice は "0.0" や "160.0" のような文字列の数値にしてください')
+            sd = pr.get("startDate")
+            if sd is not None and not (isinstance(sd, str) and re.fullmatch(r"\d{4}-\d{2}-\d{2}", sd)):
+                errs.append("price.startDate は null または YYYY-MM-DD にしてください")
     ar = data.get("ageRating")
     if ar is not None:
         if not isinstance(ar, dict) or not ar:
@@ -231,6 +246,103 @@ def age_changes(decl, wanted):
     return out
 
 
+# ---------- 価格(初回の設定のみ。既存の価格の変更は対応しない) ----------
+def _dec(x):
+    return decimal.Decimal(str(x))
+
+
+def _fmt(d):
+    """価格を、指数表記にしない読みやすい文字列にする。"""
+    return format(d.normalize(), "f")
+
+
+def _next_path(res):
+    nxt = (res.get("links") or {}).get("next")
+    if not nxt:
+        return None
+    return nxt[len(BASE):] if nxt.startswith(BASE) else nxt
+
+
+def find_price_point(client, app_id, territory, price, max_pages=40):
+    """価格ポイントを探す。(ID, 近い価格の一覧) を返す。ID は不透明な文字列で、組み立てない。"""
+    want = _dec(price)
+    seen, path, params, pages = [], f"/v1/apps/{app_id}/appPricePoints", {"filter[territory]": territory, "limit": 200}, 0
+    while path and pages < max_pages:
+        res = client.request("GET", path, params)
+        for pp in res.get("data", []):
+            cp = (pp.get("attributes") or {}).get("customerPrice")
+            if cp is None:
+                continue
+            seen.append((_dec(cp), pp["id"]))
+            if _dec(cp) == want:
+                return pp["id"], []
+        path, params, pages = _next_path(res), None, pages + 1
+    seen.sort(key=lambda t: abs(t[0] - want))
+    return None, [_fmt(c) for c, _ in seen[:5]]
+
+
+def read_current_price(client, app_id):
+    """(現在の基準の価格 or None, 説明)。スケジュールが無ければ None。"""
+    try:
+        res = client.request("GET", f"/v1/apps/{app_id}/appPriceSchedule")
+    except SyncError as e:
+        if "HTTP 404" in str(e):
+            return None, "価格のスケジュールが未設定"
+        raise
+    sid = (res.get("data") or {}).get("id")
+    if not sid:
+        return None, "価格のスケジュールが未設定"
+    mp = client.request("GET", f"/v1/appPriceSchedules/{sid}/manualPrices", {"include": "appPricePoint"})
+    points = {i["id"]: i for i in mp.get("included", []) if i.get("type") == "appPricePoints"}
+    prices = []
+    for x in mp.get("data", []):
+        pid = (((x.get("relationships") or {}).get("appPricePoint") or {}).get("data") or {}).get("id")
+        cp = ((points.get(pid) or {}).get("attributes") or {}).get("customerPrice")
+        if cp is not None:
+            prices.append(cp)
+    if not prices:
+        return None, "手動の価格が未設定"
+    return prices[0], f"手動の価格 {len(prices)} 件"
+
+
+def plan_price(client, app_id, pr):
+    pid, near = find_price_point(client, app_id, pr["baseTerritory"], pr["customerPrice"])
+    if not pid:
+        raise SyncError(f"price: {pr['baseTerritory']} に価格 {pr['customerPrice']} の価格ポイントがありません。近い価格: {', '.join(near) or '(取得できず)'}")
+    cur, detail = read_current_price(client, app_id)
+    item = {"territory": pr["baseTerritory"], "customerPrice": pr["customerPrice"], "pricePointId": pid,
+            "startDate": pr.get("startDate"), "current": cur, "detail": detail}
+    if cur is None:
+        item["action"] = "set"
+    elif _dec(cur) == _dec(pr["customerPrice"]):
+        item["action"] = "none"
+    else:
+        raise SyncError(f"price: 現在の価格は {cur} です。既存の価格の変更は、誤って価格を壊さないために未対応です(App Store Connect の画面で変更してください)")
+    return item
+
+
+def apply_price(client, app_id, item):
+    body = {"data": {"type": "appPriceSchedules", "attributes": {},
+                     "relationships": {"app": {"data": {"type": "apps", "id": app_id}},
+                                       "baseTerritory": {"data": {"type": "territories", "id": item["territory"]}},
+                                       "manualPrices": {"data": [{"type": "appPrices", "id": "${newprice-0}"}]}}},
+            "included": [{"type": "appPrices", "id": "${newprice-0}",
+                          "attributes": {"startDate": item["startDate"], "endDate": None},
+                          "relationships": {"appPricePoint": {"data": {"type": "appPricePoints", "id": item["pricePointId"]}}}}]}
+    client.request("POST", "/v1/appPriceSchedules", None, body)
+
+
+def confirm_price_ok(item, confirm):
+    """--confirm-price JPN=160 の形で、金額と地域を打ち直した時だけ True。"""
+    if not confirm or "=" not in confirm:
+        return False
+    terr, _, amount = confirm.partition("=")
+    try:
+        return terr == item["territory"] and _dec(amount) == _dec(item["customerPrice"])
+    except decimal.InvalidOperation:
+        return False
+
+
 def build_plan(client, data, base_dir='.'):
     errs = validate(data)
     if errs:
@@ -292,7 +404,9 @@ def build_plan(client, data, base_dir='.'):
         else:
             changes += diff_fields("reviewDetail", "-", res["id"], res["attributes"], data["reviewDetail"], REVIEW_FIELDS)
 
-    return {"appId": app_id, "versionId": version_id, "versionState": state, "changes": changes, "notes": notes, "screenshots": shots}
+    price = plan_price(client, app_id, data["price"]) if data.get("price") else None
+    return {"appId": app_id, "versionId": version_id, "versionState": state, "changes": changes, "notes": notes,
+            "screenshots": shots, "price": price}
 
 
 # ---------- スクリーンショット(App Asset Library) ----------
@@ -489,6 +603,13 @@ def show_plan(plan):
         print(f"    新規: {new[:80]!r}{'…' if len(new) > 80 else ''}  ({len(new)}文字)")
     if any(c["kind"] == "ageRating" for c in plan["changes"]):
         print("! 年齢制限は申告です。アプリの実際の内容と一致させてください(確認はオーナー)。")
+    pr = plan.get("price")
+    if pr:
+        if pr["action"] == "none":
+            print(f"- [price {pr['territory']}] 現在 {pr['current']} で、変更なし")
+        else:
+            print(f"- [price {pr['territory']}] 現在: {pr['detail']} → 新規: {pr['customerPrice']}(開始日: {pr['startDate'] or '即時'})")
+            print(f"    ! 金額に関わる設定です。実行には --confirm-price {pr['territory']}={pr['customerPrice']} が必要(金額と地域を打ち直す)")
     for it in plan.get("screenshots", []):
         print(f"- [screenshots {it['locale']}] {it['group']}: {len(it['files'])} 枚を追加(既存 {len(it['existing'])} 枚)")
         if it["existing"]:
@@ -505,6 +626,7 @@ def main(argv=None, client=None):
     ap.add_argument("input")
     ap.add_argument("--confirm-bundle-id", help="apply の時に必須。入力の bundleId と同じ値を指定する")
     ap.add_argument("--backup-dir", default="private")
+    ap.add_argument("--confirm-price", help="価格を設定する時に必須。地域=金額(例: JPN=160)。plan で表示された金額と地域を打ち直す(二段階目の承認)")
     ap.add_argument("--allow-delete-placements", action="store_true",
                     help="既存のスクリーンショットの配置を削除して置き換える(画像はライブラリに残る)")
     args = ap.parse_args(argv)
@@ -518,13 +640,19 @@ def main(argv=None, client=None):
             return 0
         if args.confirm_bundle_id != data["bundleId"]:
             raise SyncError("apply には --confirm-bundle-id <Bundle ID> が必要です(オーナーが差分を確認して OK した後にだけ実行する)")
-        if not plan["changes"] and not plan["screenshots"]:
+        pr = plan.get("price")
+        if pr and pr["action"] == "set" and not confirm_price_ok(pr, args.confirm_price):
+            raise SyncError(f"価格の設定には --confirm-price {pr['territory']}={pr['customerPrice']} が必要です(金額と地域を、承認した内容と同じに打ち直す)")
+        if not plan["changes"] and not plan["screenshots"] and not (pr and pr["action"] == "set"):
             return 0
         for it in plan["screenshots"]:  # 破壊的な操作の関所は、何かを書き込む前に確認する
             if it["existing"] and not args.allow_delete_placements:
                 raise SyncError(f"{it['locale']} / {it['group']} に既存のスクリーンショットがあります。置き換えるには --allow-delete-placements が必要です")
         backup, n = apply_plan(client, plan, args.backup_dir)
         print(f"\n{n} 件のテキストの更新を送信しました。変更前の値: {backup}(コミットしない)")
+        if pr and pr["action"] == "set":
+            apply_price(client, plan["appId"], pr)
+            print(f"価格を設定しました: {pr['territory']} {pr['customerPrice']}。App Store Connect の画面で確認してください。")
         if plan["screenshots"]:
             lib = get_asset_library_id(client, plan["appId"])
             for loc, group, cnt in apply_screenshots(client, plan, lib, args.allow_delete_placements):

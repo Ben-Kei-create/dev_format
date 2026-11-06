@@ -11,17 +11,28 @@ if [ -n "$bad" ]; then
   fail=1
 fi
 
-# 2) 追加行にメールアドレス・電話番号らしい文字列がないか
+# 1b) 鍵・認証情報のファイルがステージされていないか(API の鍵は、リポジトリに置かない)
+keyfiles="$(git diff --cached --name-only --diff-filter=ACMR | grep -iE '(^|/)(AuthKey_[^/]*|[^/]*\.(p8|p12|pem|key|mobileprovision)|[^/]*service[-_]?account[^/]*\.json|[^/]*credentials?[^/]*\.json)$' || true)"
+if [ -n "$keyfiles" ]; then
+  echo "中止: 鍵・認証情報らしいファイルがステージされています(コミットしない。リポジトリの外に置く):" >&2
+  echo "$keyfiles" | sed 's/^/  /' >&2
+  fail=1
+fi
+
+# 2) 追加行にメールアドレス・電話番号・秘密鍵らしい文字列がないか
 git diff --cached -U0 --no-color | python3 -I -c '
 import re, sys
 email = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}")
 phone = re.compile(r"(?:\+81[ -]?\(?0?\)?[1-9][0-9 -]{7,}|(?<![0-9])0[1-9]0?[ -]?[0-9]{3,4}[ -]?[0-9]{4}(?![0-9]))")
 ok_domains = ("example.com", "example.org", "example.net", "users.noreply.github.com", "anthropic.com")
+keyblock = re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----|\"private_key\"\s*:")
 bad = []
 for l in sys.stdin.read().splitlines():
     if not l.startswith("+") or l.startswith("+++"):
         continue
     t = l[1:]
+    if keyblock.search(t):
+        bad.append(("秘密鍵", "(行は表示しない)"))
     for m in email.findall(t):
         if not m.lower().endswith(ok_domains):
             bad.append(("メールアドレス", m))
