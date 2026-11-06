@@ -22,7 +22,7 @@ dev_format/
 - `philosophy/`(開発思想、デザイン原則、固定フォント、技術の標準)、`growth/`(差別化プレイブック)
 - `modes/`(Era / Rule / Voice の3つの質問、アイコン用プロンプト、画像素材の依頼、起動アニメーション、音声)
 - `review_prompts/`(0 受け取り、1b 差別化、2b 想定外、Codex レビュー、既存アプリ診断、`external/`=ChatGPT・Codex 向けレビュー指示)
-- `marketing/`(X での宣伝。既定 @AIJAPANE)、`web/`(公開ページの雛形。GiveTeX 用)、`workflow/`(コマンド・スキル・モデルの使い分け)
+- `marketing/`(X での宣伝。既定 @AIJAPANE)、`web/`(公開ページの雛形。GiveTeX 用)、`workflow/`(コマンド・スキル・モデルの使い分け、使うツール・素材のカタログ)
 - `docs/`(記録の雛形)、`scripts/`(ダイス、pre-commit)、`.gitignore`
 
 ### stores/apple/
