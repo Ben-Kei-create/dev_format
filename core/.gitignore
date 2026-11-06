@@ -6,3 +6,7 @@ private/*
 *.mobileprovision
 .env
 .env.*
+
+# Python
+__pycache__/
+*.pyc
