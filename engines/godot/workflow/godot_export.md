@@ -17,15 +17,17 @@
 - 書き出しは、**Xcode プロジェクトを生成する**。それを Xcode で開いて、通常の iOS アプリと同じようにビルド・Archive する。変更したら再度書き出す。
 - iOS シミュレータは Compatibility レンダラーのみ対応。**実機で確認する。**
 - コンパイルエラーが出る時は、`xcode-select` が Xcode を指しているか確認する。
-- **要確認**: Apple のプライバシーマニフェスト(PrivacyInfo.xcprivacy)と、Godot の書き出しでの扱い。公式ドキュメントで確認し、`stores/apple` の提出前チェックに反映する。
+- **プライバシーマニフェスト(要確認)**: Apple は 2024-05-01 以降、使用理由の申告が必要な API を使うアプリの審査を通さないとされる。Godot の iOS 書き出しの設定には、`privacy/` の項目(カメラ等の使用説明、収集するデータの分類)がある。ただし、**PrivacyInfo.xcprivacy を自動で生成するか、必要な API の理由を宣言できるかは、確認できなかった。**書き出した Xcode プロジェクトに PrivacyInfo.xcprivacy が含まれているかを確認し、含まれていなければ、自分で追加する。広告などのプラグインの SDK のマニフェストも確認する。結果を `stores/apple` の提出前チェック(App Privacy との一致)に反映する。
 - 以降の申請(審査メモ、スクリーンショット、TestFlight、提出前チェック)は `stores/apple/` に従う。
 
 ## Android(Google Play)
-二次情報で確認した点(公式の「Exporting for Android」で確認すること):
-- Android Studio などで **Android SDK** を入れる。**JDK は 17 が必要とされる**(新しい JDK で失敗する例あり)。Editor Settings > Export > Android で、JDK と SDK のパスを設定する(Godot の全プロジェクト共通)。
-- リリース用の**キーストア**を `keytool`(JDK 付属)で作り、書き出し設定に、パス・エイリアス・パスワードを設定する。**キーストアとパスワードは、リポジトリにコミットしない。チャットにも出さない。紛失すると、更新ができなくなる。安全な場所に控える。**
-- Google Play は **Android App Bundle(AAB)**での提出が前提とされる(要確認)。Godot の Gradle ビルドを有効にして AAB を書き出す手順を、公式で確認する。
-- **ターゲット API レベル**: 2026-08-31 以降、新規アプリと更新は Android 16(API 36)以上が対象(`stores/google-play/`)。**Godot の書き出し設定が、この要件を満たすか確認する**(エンジンのバージョンや Gradle テンプレートによっては古いことがある)。
+公式ドキュメント「Exporting for Android」で確認した点(2026-11-06。stable 版):
+- **JDK は OpenJDK 17 を推奨**(新しい JDK も対応するが、17 が最も互換性・安定性が高いとされる)。
+- Android SDK の構成: Platform-Tools 35.0.0 以降、Build-Tools 35.0.1、Platform は Android 35、Command-line Tools は最新、CMake 3.10.2.4988404、NDK r28b。Editor Settings > Export > Android で、JDK と SDK のパスを設定する(全プロジェクト共通)。
+- **AAB で書き出すには、Gradle ビルドの設定が必要**。「2021年8月以降に Google Play へ新しく出すアプリは AAB でなければならない」と書かれている。
+- リリース用の**キーストア**: `keytool` で生成(`-keystore`、`-alias`、`-keyalg RSA`)。書き出し設定の Release にキーストアのパス、Release User にエイリアス、Release Password にパスワードを設定する。**キーストアのパスワードと鍵のパスワードは、現状同じにする必要がある。**リリースの書き出しでは「Export With Debug」のチェックを外す。AAB / APK のアップロードには、デバッグ用ではないキーストアが必要。
+- **キーストアとパスワードは、リポジトリにコミットしない。チャットにも出さない。紛失すると更新ができなくなる。安全な場所に控える。**
+- **ターゲット API レベル(要確認・ギャップの可能性あり)**: 2026-08-31 以降、新規アプリと更新は Android 16(API 36)以上が対象(`stores/google-play/`)。このドキュメントには target SDK の設定の記載がなく、必要な Platform は Android 35 と書かれている。**API 36 を対象にできるか**は、使う Godot のバージョンの Android 書き出しのクラスリファレンス(EditorExportPlatformAndroid)と、Gradle ビルドの設定で、書き出し前に必ず確認する。満たせない場合は、新しいバージョンへ上げる。
 - 以降の申請(クローズドテスト、掲載情報、データセーフティ、提出前チェック)は `stores/google-play/` に従う。
 
 ## 両ストアに出す時
