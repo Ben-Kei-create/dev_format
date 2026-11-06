@@ -6,6 +6,8 @@ AI は、必要になった時点で、**ChatGPT に渡すプロンプト・サ�
 
 **ChatGPT への画像生成の指示は、ダイスに関係なく、常に積極的に出す**(`review_prompts/external/README.md` の表)。必要な場面になったら、待たずに指示を出す。
 
+画面全体の参考画像(ホーム・操作画面・状態の変化)は、`modes/design_interview.md` のインタビュー形式の指示文で作る。
+
 ## 先にカタログで探す
 素材を作る前に、`workflow/tools_catalog.md` で使える素材・ツール(Kenney、Poly Haven、Quaternius、Mixamo、Pixelorama など)を探す。合うものがあれば使い、商用利用の条件を確認して記録する。無い、または世界観に合わない時だけ、下の担当ツールで作る。
 
