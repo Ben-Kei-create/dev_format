@@ -4,10 +4,10 @@
 - `plan`  : 読み取りのみ(GET)。現在の値との差分を表示する。何も書き込まない。
 - `apply` : オーナーが差分を確認して OK した後にだけ実行する。変更前の値を private/ に保存してから PATCH する。
 - 対象: バージョンの掲載文(説明・キーワード・プロモーション文・サポート/マーケティングURL・新機能)、
-        アプリ情報(名前・サブタイトル・プライバシーポリシーURL)、審査メモ(notes)、スクリーンショット
+        アプリ情報(名前・サブタイトル・プライバシーポリシーURL)、審査メモ(notes)、年齢制限の回答(ageRatingDeclarations)、スクリーンショット
         (App Asset Library: 予約 → アップロード → 確定 → 処理待ち → 配置 → 並び順。従来のセット方式は Apple が非推奨にしたため使わない)。
 - 対象外(手動): アプリのレコード作成、ビルドのアップロード、App Privacy、審査連絡先(姓名・メール・電話)、
-        価格、審査への提出。
+        価格、配信地域、審査への提出。
 - 認証: 環境変数 ASC_KEY_ID / ASC_ISSUER_ID / ASC_KEY_PATH(.p8 のパス)。鍵はリポジトリに置かない・表示しない。
 - 依存: pip install pyjwt cryptography
 状態: 実際の API では未実行(テストは偽の応答のみ)。最初は必ず `plan` だけを実行すること。
@@ -20,6 +20,9 @@ VERSION_LOC_FIELDS = {"description": 4000, "keywords": 100, "marketingUrl": None
                       "promotionalText": 170, "supportUrl": None, "whatsNew": 4000}
 APPINFO_LOC_FIELDS = {"name": 30, "subtitle": 30, "privacyPolicyUrl": None}
 REVIEW_FIELDS = {"notes": 4000}
+# 年齢制限の回答(AgeRatingDeclaration)。属性名は公式の PATCH の例(2026-11-06)。実際に受け付ける属性は、読み取った現在の値のキーを正とする
+AGE_LEVELS = {"NONE", "INFREQUENT", "FREQUENT"}  # INFREQUENT_OR_MILD / FREQUENT_OR_INTENSE は非推奨(公式)
+AGE_DEPRECATED = {"INFREQUENT_OR_MILD": "INFREQUENT", "FREQUENT_OR_INTENSE": "FREQUENT"}
 EDITABLE_STATES = {"PREPARE_FOR_SUBMISSION", "DEVELOPER_REJECTED", "REJECTED", "METADATA_REJECTED"}
 # スクリーンショット(App Asset Library)。値は Apple の公式ドキュメントの記載
 ASSET_CATEGORY = "APP_SCREENSHOTS_AND_PREVIEWS"
@@ -55,7 +58,7 @@ def validate(data):
     for key in ("bundleId", "versionString"):
         if not isinstance(data.get(key), str) or not data[key]:
             errs.append(f"{key} が必要です")
-    allowed_top = {"bundleId", "versionString", "versionLocalizations", "appInfoLocalizations", "reviewDetail", "screenshots"}
+    allowed_top = {"bundleId", "versionString", "versionLocalizations", "appInfoLocalizations", "reviewDetail", "screenshots", "ageRating"}
     for k in data:
         if k not in allowed_top:
             errs.append(f"未対応のキー: {k}(対象外。手動で入力してください)")
@@ -83,6 +86,16 @@ def validate(data):
             errs.append(f"reviewDetail.{f} は文字列にしてください")
         elif len(v) > REVIEW_FIELDS[f]:
             errs.append(f"reviewDetail.{f} が上限 {REVIEW_FIELDS[f]} 文字を超えています(現在 {len(v)} 文字)")
+    ar = data.get("ageRating")
+    if ar is not None:
+        if not isinstance(ar, dict) or not ar:
+            errs.append("ageRating は {属性名: 値} のオブジェクトにしてください")
+        else:
+            for k, v in ar.items():
+                if isinstance(v, str) and v in AGE_DEPRECATED:
+                    errs.append(f"ageRating.{k}: {v} は非推奨です。{AGE_DEPRECATED[v]} を使ってください")
+                elif not (isinstance(v, (bool, str)) or v is None):
+                    errs.append(f"ageRating.{k} は true / false / 文字列 / null にしてください")
     # スクリーンショットの指定: {ロケール: {配置グループ: [ファイルのパス, ...]}}
     for loc, groups in (data.get("screenshots") or {}).items():
         if not isinstance(groups, dict):
@@ -187,6 +200,37 @@ def diff_fields(kind, loc, rid, current, wanted, allowed):
     return changes
 
 
+def age_changes(decl, wanted):
+    """読み取った現在の回答と比べて、変更点を返す。現在の値のキーにない属性、型の違い、不正な値は止める。"""
+    cur = decl.get("attributes", {})
+    errs, out = [], []
+    for k, v in wanted.items():
+        if k not in cur:
+            errs.append(f"ageRating.{k} は、現在の回答の属性にありません(属性名を確認。公式の例: " + ", ".join(sorted(cur)) + ")")
+            continue
+        now = cur[k]
+        if isinstance(now, bool):
+            if not isinstance(v, bool):
+                errs.append(f"ageRating.{k} は true / false にしてください")
+                continue
+        elif k == "kidsAgeBand":
+            if v is not None and not isinstance(v, str):
+                errs.append("ageRating.kidsAgeBand は null または文字列にしてください")
+                continue
+        elif isinstance(v, str):
+            if v not in AGE_LEVELS:
+                errs.append(f"ageRating.{k}: {v!r} は不正です(使える値: {', '.join(sorted(AGE_LEVELS))})")
+                continue
+        else:
+            errs.append(f"ageRating.{k} は {', '.join(sorted(AGE_LEVELS))} のいずれかにしてください")
+            continue
+        if now != v:
+            out.append({"kind": "ageRating", "locale": "-", "id": decl["id"], "field": k, "old": now, "new": v})
+    if errs:
+        raise SyncError("年齢制限の回答に問題があります:\n  - " + "\n  - ".join(errs))
+    return out
+
+
 def build_plan(client, data, base_dir='.'):
     errs = validate(data)
     if errs:
@@ -214,21 +258,32 @@ def build_plan(client, data, base_dir='.'):
                 continue
             changes += diff_fields("versionLocalization", loc, r["id"], r["attributes"], wanted, VERSION_LOC_FIELDS)
 
-    if data.get("appInfoLocalizations"):
+    info_id = None
+    if data.get("appInfoLocalizations") or data.get("ageRating"):
         infos = client.request("GET", f"/v1/apps/{app_id}/appInfos").get("data", [])
         if not infos:
             notes.append("appInfos が取得できませんでした")
         else:
             info = next((i for i in infos if (i.get("attributes", {}).get("appStoreState") or
                                               i.get("attributes", {}).get("state")) in EDITABLE_STATES), infos[0])
-            remote = client.request("GET", f"/v1/appInfos/{info['id']}/appInfoLocalizations").get("data", [])
-            by_loc = {r["attributes"]["locale"]: r for r in remote}
-            for loc, wanted in data["appInfoLocalizations"].items():
-                r = by_loc.get(loc)
-                if not r:
-                    notes.append(f"appInfoLocalizations: ロケール {loc} がありません(先に追加してください)")
-                    continue
-                changes += diff_fields("appInfoLocalization", loc, r["id"], r["attributes"], wanted, APPINFO_LOC_FIELDS)
+            info_id = info["id"]
+
+    if data.get("appInfoLocalizations") and info_id:
+        remote = client.request("GET", f"/v1/appInfos/{info_id}/appInfoLocalizations").get("data", [])
+        by_loc = {r["attributes"]["locale"]: r for r in remote}
+        for loc, wanted in data["appInfoLocalizations"].items():
+            r = by_loc.get(loc)
+            if not r:
+                notes.append(f"appInfoLocalizations: ロケール {loc} がありません(先に追加してください)")
+                continue
+            changes += diff_fields("appInfoLocalization", loc, r["id"], r["attributes"], wanted, APPINFO_LOC_FIELDS)
+
+    if data.get("ageRating") and info_id:
+        res = client.request("GET", f"/v1/appInfos/{info_id}/ageRatingDeclaration").get("data")
+        if not res:
+            notes.append("年齢制限の回答(ageRatingDeclaration)を取得できませんでした")
+        else:
+            changes += age_changes(res, data["ageRating"])
 
     if data.get("reviewDetail"):
         res = client.request("GET", f"/v1/appStoreVersions/{version_id}/appStoreReviewDetail").get("data")
@@ -397,6 +452,7 @@ ENDPOINTS = {
     "versionLocalization": ("appStoreVersionLocalizations", "/v1/appStoreVersionLocalizations/{id}"),
     "appInfoLocalization": ("appInfoLocalizations", "/v1/appInfoLocalizations/{id}"),
     "reviewDetail": ("appStoreReviewDetails", "/v1/appStoreReviewDetails/{id}"),
+    "ageRating": ("ageRatingDeclarations", "/v1/ageRatingDeclarations/{id}"),
 }
 
 
@@ -427,10 +483,12 @@ def show_plan(plan):
     if not plan["changes"]:
         print("変更はありません。")
     for c in plan["changes"]:
-        old = (c["old"] or "")
+        old, new = str(c["old"]) if c["old"] is not None else "(なし)", str(c["new"]) if c["new"] is not None else "(なし)"
         print(f"- [{c['kind']} {c['locale']}] {c['field']}")
         print(f"    現在: {old[:80]!r}{'…' if len(old) > 80 else ''}")
-        print(f"    新規: {c['new'][:80]!r}{'…' if len(c['new']) > 80 else ''}  ({len(c['new'])}文字)")
+        print(f"    新規: {new[:80]!r}{'…' if len(new) > 80 else ''}  ({len(new)}文字)")
+    if any(c["kind"] == "ageRating" for c in plan["changes"]):
+        print("! 年齢制限は申告です。アプリの実際の内容と一致させてください(確認はオーナー)。")
     for it in plan.get("screenshots", []):
         print(f"- [screenshots {it['locale']}] {it['group']}: {len(it['files'])} 枚を追加(既存 {len(it['existing'])} 枚)")
         if it["existing"]:

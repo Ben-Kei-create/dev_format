@@ -13,6 +13,9 @@ class Fake:
             return {"data": [{"id": "L1", "attributes": {"locale": "ja", "description": "old", "keywords": "a,b", "whatsNew": "x"}}]}
         if path == "/v1/apps/A1/appInfos": return {"data": [{"id": "I1", "attributes": {"appStoreState": "PREPARE_FOR_SUBMISSION"}}]}
         if path == "/v1/appInfos/I1/appInfoLocalizations": return {"data": [{"id": "IL1", "attributes": {"locale": "ja", "name": "N", "subtitle": "S"}}]}
+        if path == "/v1/appInfos/I1/ageRatingDeclaration":
+            return {"data": {"id": "AR1", "attributes": {"alcoholTobaccoOrDrugUseOrReferences": "NONE", "gambling": False,
+                                                          "unrestrictedWebAccess": True, "kidsAgeBand": None}}}
         if path == "/v1/appStoreVersions/V1/appStoreReviewDetail": return {"data": {"id": "R1", "attributes": {"notes": "n0"}}}
         if method == "PATCH": return {}
         raise AssertionError(path)
@@ -113,6 +116,39 @@ class ShotFake(Fake):
         if path.startswith("/v1/appAssetLibraryPlacements/") and method == "DELETE": self.calls.append((method, path, params, body)); return {}
         if path == "/v1/appAssetLibraryPlacementOrderingRequests": self.calls.append((method, path, params, body)); return {"data": {"id": "O1"}}
         return super().request(method, path, params, body)
+
+
+class A(unittest.TestCase):
+    def plan(self, ar):
+        return a.build_plan(Fake(), dict(BASE, ageRating=ar))
+    def test_diff_only_changed(self):
+        p = self.plan({"alcoholTobaccoOrDrugUseOrReferences": "FREQUENT", "gambling": False, "unrestrictedWebAccess": False})
+        self.assertEqual({c["field"] for c in p["changes"]}, {"alcoholTobaccoOrDrugUseOrReferences", "unrestrictedWebAccess"})
+        self.assertTrue(all(c["kind"] == "ageRating" and c["id"] == "AR1" for c in p["changes"]))
+    def test_unknown_attribute_rejected(self):
+        with self.assertRaises(a.SyncError) as cm: self.plan({"somethingNew": "NONE"})
+        self.assertIn("somethingNew", str(cm.exception))
+    def test_bool_type_enforced(self):
+        with self.assertRaises(a.SyncError): self.plan({"gambling": "NONE"})
+    def test_level_value_enforced(self):
+        with self.assertRaises(a.SyncError): self.plan({"alcoholTobaccoOrDrugUseOrReferences": "SOMETIMES"})
+    def test_deprecated_value_rejected_in_validate(self):
+        e = "\n".join(a.validate(dict(BASE, ageRating={"alcoholTobaccoOrDrugUseOrReferences": "FREQUENT_OR_INTENSE"})))
+        self.assertIn("非推奨", e); self.assertIn("FREQUENT", e)
+    def test_kids_age_band_null_or_string(self):
+        self.assertEqual(self.plan({"kidsAgeBand": None})["changes"], [])
+        self.assertEqual([c["field"] for c in self.plan({"kidsAgeBand": "FIVE_AND_UNDER"})["changes"]], ["kidsAgeBand"])
+        with self.assertRaises(a.SyncError): self.plan({"kidsAgeBand": True})
+    def test_apply_patches_declaration(self):
+        f = Fake(); p = a.build_plan(f, dict(BASE, ageRating={"alcoholTobaccoOrDrugUseOrReferences": "FREQUENT", "gambling": True}))
+        with tempfile.TemporaryDirectory() as t: a.apply_plan(f, p, t)
+        patch = [c for c in f.calls if c[0] == "PATCH"][0]
+        self.assertEqual(patch[1], "/v1/ageRatingDeclarations/AR1")
+        self.assertEqual(patch[3]["data"]["type"], "ageRatingDeclarations")
+        self.assertEqual(patch[3]["data"]["attributes"], {"alcoholTobaccoOrDrugUseOrReferences": "FREQUENT", "gambling": True})
+    def test_plan_read_only_and_show(self):
+        f = Fake(); p = a.build_plan(f, dict(BASE, ageRating={"gambling": True, "kidsAgeBand": "FIVE_AND_UNDER"}))
+        self.assertTrue(all(c[0] == "GET" for c in f.calls)); a.show_plan(p)
 
 
 class S(unittest.TestCase):

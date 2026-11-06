@@ -36,9 +36,12 @@ class T(unittest.TestCase):
     def test_validate_limits_and_unknown(self):
         e, w = p.validate(dict(BASE, listings={"ja-JP": {"shortDescription": "x" * 81, "foo": "1"}}, extra=1))
         s = "\n".join(e); self.assertIn("上限 80", s); self.assertIn("foo", s); self.assertIn("extra", s)
-    def test_title_warns_over_30_errors_over_50(self):
-        e, w = p.validate(dict(BASE, listings={"ja-JP": {"title": "x" * 31}})); self.assertEqual(e, []); self.assertTrue(w)
-        e, w = p.validate(dict(BASE, listings={"ja-JP": {"title": "x" * 51}})); self.assertTrue(e)
+    def test_title_limit_30(self):
+        e, w = p.validate(dict(BASE, listings={"ja-JP": {"title": "あ" * 30}})); self.assertEqual(e, [])  # 全角も1文字
+        e, w = p.validate(dict(BASE, listings={"ja-JP": {"title": "あ" * 31}})); self.assertIn("上限 30", "\n".join(e))
+    def test_full_description_limit_4000(self):
+        e, _ = p.validate(dict(BASE, listings={"ja-JP": {"fullDescription": "x" * 4000}})); self.assertEqual(e, [])
+        e, _ = p.validate(dict(BASE, listings={"ja-JP": {"fullDescription": "x" * 4001}})); self.assertIn("上限 4000", "\n".join(e))
     def test_validate_pii(self):
         mail = "someone" + "@" + "gmail.com"; tel = "090-" + "1234-5678"
         e, _ = p.validate(dict(BASE, listings={"ja-JP": {"fullDescription": f"{mail} {tel}"}}))

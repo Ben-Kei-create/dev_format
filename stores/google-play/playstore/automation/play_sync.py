@@ -21,8 +21,8 @@ import argparse, hashlib, json, os, pathlib, re, struct, sys, time, urllib.error
 API = "https://androidpublisher.googleapis.com/androidpublisher/v3/applications"
 UPLOAD = "https://androidpublisher.googleapis.com/upload/androidpublisher/v3/applications"
 SCOPE = "https://www.googleapis.com/auth/androidpublisher"
-LISTING_FIELDS = {"title": 50, "shortDescription": 80, "fullDescription": 4000, "video": None}
-TITLE_RECOMMENDED = 30  # 30 と 50 の情報がある。Play Console で確認。50 超はエラー、30 超は警告
+# 上限は Play Console ヘルプ「アプリの作成と設定」(2026-11-06): アプリ名 30、短い説明 80、詳しい説明 4,000。全角・半角を同じ1文字として数える
+LISTING_FIELDS = {"title": 30, "shortDescription": 80, "fullDescription": 4000, "video": None}
 # 画像の規則: Google Play ヘルプ「プレビュー アセット」(2026-11-06 確認)。imageType の値は AppImageType(公式)
 # スクリーンショット: 端末の種類ごとに最大8枚 / JPEG または24ビット PNG(アルファなし) / 各辺 320〜3840px / 長辺は短辺の2倍まで
 # アイコン: 512x512 / 32ビット PNG(アルファあり) / 1024KB 以下
@@ -76,8 +76,6 @@ def validate(data):
                 errs.append(f"listings.{lang}.{f} は文字列にしてください")
             elif LISTING_FIELDS[f] and len(v) > LISTING_FIELDS[f]:
                 errs.append(f"listings.{lang}.{f} が上限 {LISTING_FIELDS[f]} 文字を超えています(現在 {len(v)} 文字)")
-            elif f == "title" and len(v) > TITLE_RECOMMENDED:
-                warns.append(f"listings.{lang}.title が {len(v)} 文字です(30 文字を上限とする情報もある。Play Console で確認)")
     for lang, types in (data.get("images") or {}).items():
         if not isinstance(types, dict):
             errs.append(f"images.{lang} はオブジェクトにしてください")

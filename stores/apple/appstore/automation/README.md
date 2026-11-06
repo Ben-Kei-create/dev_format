@@ -4,7 +4,7 @@
 **審査への提出は、自動にしない**(オーナーが App Store Connect の画面で、手で提出する)。
 
 ## 状態(重要)
-- `asc_sync.py` のテスト(`python3 -m unittest -v test_asc_sync`)は、偽の応答で20件通過している。**実際の App Store Connect の API では、まだ一度も実行していない。**
+- `asc_sync.py` のテスト(`python3 -m unittest -v test_asc_sync`)は、偽の応答で28件通過している。**実際の App Store Connect の API では、まだ一度も実行していない。**
 - 最初は必ず `plan`(読み取りのみ)だけを実行し、結果を目で確認する。`apply` は、その後。
 - API の細部(リソース名、状態の名前、文字数の上限)は、Apple の公式リファレンスで確認しながら使う。確認できた点: トークンは ES256、`aud` は `appstoreconnect-v1`、有効期間は20分以内(公式のフォーラム情報)、`PATCH /v1/appStoreVersionLocalizations/{id}` が存在する(公式リファレンス)。
 
@@ -19,12 +19,19 @@
 | App Privacy(プライバシーの申告) | **対象外**(公開の API で確認できない。画面で手動) |
 | 審査連絡先(姓名・メール・電話)、審査用アカウント | **対象外・手動**(個人情報。スクリプトは受け付けず、入力に含まれると止める) |
 | スクリーンショット | **対応**(App Asset Library。下の節) |
-| 年齢制限 | 未対応(手動)。**API は対応**: 読み取り `GET /v1/appInfos/{id}/ageRatingDeclaration`、更新 `PATCH /v1/ageRatingDeclarations/{id}`。審査提出の前に回答が必要。非推奨の値 `INFREQUENT_OR_MILD` / `FREQUENT_OR_INTENSE` は `INFREQUENT` / `FREQUENT` に置き換え。**属性名の一覧は、公式のページから取得できなかった**ので、実装前に確認する |
+| 年齢制限の回答 | **対応**(`ageRating`。下の節) |
 | 価格 | 未対応(手動)。**API は対応**: `POST /v1/appPriceSchedules`(基準の地域、手動の価格、開始日・終了日。価格ポイントの ID を先に調べる必要がある)。**金額に関わるので、API 化しても承認を二段階にする** |
 | 配信地域 | 未対応(手動)。公式で確認できたのは、`GET /v2/appAvailabilities/{id}`(読み取り)と、事前注文用の作成・地域の変更・終了のみ。**通常の配信地域の設定に使えるかは、読み取れなかった**ので、手動のまま |
 | **審査への提出** | **対象外・手動** |
 
-※ 年齢制限・価格・配信地域の API の確認結果は上の表(2026-11-06、公式ドキュメント)。実装する時は、各エンドポイントの本文を確認してから、同じ関所(`plan` → OK → `apply`)で作る。
+※ 価格・配信地域の API の確認結果は上の表(2026-11-06、公式ドキュメント)。実装する時は、各エンドポイントの本文を確認してから、同じ関所(`plan` → OK → `apply`)で作る。
+
+## 年齢制限の回答(`ageRating`)
+- 公式(2026-11-06): 読み取り `GET /v1/appInfos/{id}/ageRatingDeclaration`、更新 `PATCH /v1/ageRatingDeclarations/{id}`(**変更する属性だけ**を送る)。審査提出の前に回答が必要。
+- 属性名(公式の PATCH の例): `alcoholTobaccoOrDrugUseOrReferences`、`contests`、`gambling`(true / false)、`gamblingSimulated`、`medicalOrTreatmentInformation`、`profanityOrCrudeHumor`、`sexualContentGraphicAndNudity`、`sexualContentOrNudity`、`horrorOrFearThemes`、`matureOrSuggestiveThemes`、`unrestrictedWebAccess`(true / false)、`violenceCartoonOrFantasy`、`violenceRealisticProlongedGraphicOrSadistic`、`violenceRealistic`、`kidsAgeBand`(null または Made for Kids の年齢帯の文字列)。
+- 値: 段階の属性は `NONE` / `INFREQUENT` / `FREQUENT`。**`INFREQUENT_OR_MILD` / `FREQUENT_OR_INTENSE` は非推奨**(入力で止まる)。
+- **実際に受け付ける属性は、読み取った現在の回答のキーを正とする**(属性名が増減しても、現在の回答にない名前は止まる)。型が違う(真偽値の属性に文字列、など)場合も止まる。Apple は年齢区分の仕組みを更新することがあるため、App Store Connect の画面の質問と、API の属性が一致しているかを、`plan` の前に画面で確認する。
+- **年齢制限は申告であり、アプリの実際の内容に基づく**。アルコール等を含むアプリは、該当する属性を正直に申告する。`kidsAgeBand`(Made for Kids)は、審査・広告・分析の制限が大きく変わるので、設計の段階でオーナーが決める。回答はオーナーが確認してから適用する。
 
 ## スクリーンショット(App Asset Library)
 **Apple は、従来のセット方式(`appScreenshotSets` / `appScreenshots`)を非推奨にし、App Asset Library を後継とした**(公式ドキュメント、2026-11-06 確認)。このスクリプトは後継の方式で実装している。

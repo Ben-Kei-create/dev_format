@@ -4,7 +4,7 @@
 **確定(`--commit`)は、別の承認を得てから。** 確定は「変更を公開に送る」操作(公開済みのアプリでは審査に送られる)。
 
 ## 状態(重要)
-- `play_sync.py` のテスト(`python3 -m unittest -v test_play_sync`)は、偽の応答で13件通過している。**実際の Google Play の API では、まだ一度も実行していない。**
+- `play_sync.py` のテスト(`python3 -m unittest -v test_play_sync`)は、偽の応答で14件通過している。**実際の Google Play の API では、まだ一度も実行していない。**
 - 最初は必ず `plan` だけを実行する。
 - **公式リファレンスで確認できた点(2026-11-06)**:
   - `edits.insert`: POST `.../edits`。`edits.delete`: DELETE `.../edits/{editId}`。`edits.validate`: POST `.../edits/{editId}:validate`(本文は空)。`edits.commit`: POST `.../edits/{editId}:commit`(`changesInReviewBehavior` の `ERROR_IF_IN_REVIEW` あり、`changesNotSentForReview` あり)。
@@ -13,7 +13,8 @@
   - **`AppImageType` の値**: `phoneScreenshots`、`sevenInchScreenshots`、`tenInchScreenshots`、`tvScreenshots`、`wearScreenshots`、`icon`、`featureGraphic`、`tvBanner`(このスクリプトが対応するのは、`phoneScreenshots`・`sevenInchScreenshots`・`tenInchScreenshots`・`icon`・`featureGraphic`)。
   - `applications.dataSafety`: POST、本文は `safetyLabels`(CSV の内容)、応答は空。
   - **画像の規則(Google Play ヘルプ)**: スクリーンショットは端末の種類ごとに最大 8 枚、公開には端末の種類をまたいで最低 2 枚、JPEG または 24 ビット PNG(アルファなし)、各辺 320〜3840px、長辺は短辺の 2 倍まで。アイコンは 512×512 の 32 ビット PNG(アルファあり)、1024KB 以下。フィーチャーグラフィックは 1024×500 の JPEG または 24 ビット PNG(アルファなし)。`plan` で、ローカルの画像をこの規則で検査する。
-- **まだ確認できていない点**: タイトルの文字数の上限(公式ページに記載なし。30 と 50 の情報がある。50 超はエラー、30 超は警告)、`fullDescription` の上限(4,000 文字とされる。二次情報)、`edits.insert` の本文の細部、タブレットの推奨寸法(1,080〜7,680px は推奨であり、必須としては検査していない)。
+- **字数の上限(公式、Play Console ヘルプ「アプリの作成と設定」、2026-11-06)**: アプリ名 **30**、短い説明 **80**、詳しい説明 **4,000**。**全角・半角を同じ1文字として数える**。メタデータのポリシーにも「アプリ名は30文字以下」とある。超えるとエラーで止まる。
+- **まだ確認できていない点**: `edits.insert` の本文の細部、タブレットの推奨寸法(1,080〜7,680px は推奨であり、必須としては検査していない)。
 
 ## 自動にできるもの / できないもの
 | 項目 | このスクリプト |
