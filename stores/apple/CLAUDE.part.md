@@ -1,14 +1,7 @@
 
 ## ストア別ルール: Apple(App Store)
-- 審査への返信文・Apple の質問への回答案は、**Apple から実際のメッセージが届き、オーナーが文面を渡した時だけ**作る。未申請のアプリでは作らない・雛形(`appstore/after_review/`)を埋めない。提出時の「審査メモ」(`appstore/review_notes_template.md`)は別物で、提出前チェックに通過してから作る。
-- **実装完了(起動アニメーションを含む)をオーナーが宣言するまで、App Store 提出用の Archive・アップロード・App Store Connect の操作に触れない。提案もしない。** TestFlight 配布用のビルドは、オーナーが明示的に指示した時だけ(`workflow/testflight.md`)。
-- **申請内容の自動入力**(`appstore/automation/README.md`): **実装完了の宣言の後**で、オーナーが API の実行を明示的に指示した時だけ。作る → `plan`(読み取りのみ)で差分を見せる → オーナーが会話で明確に OK → `apply`。**価格は二段階の承認**(`--confirm-price` に地域と金額を打ち直す。新規の設定のみ)。年齢制限は実際の内容に基づく申告で、オーナーが確認してから。**審査への提出、個人情報、App Privacy、レコード作成、ビルドのアップロードは手動。**API の鍵はコミットもチャット貼り付けもしない。クラウドのセッションでは使わない(Mac 上のセッションのみ)。
-- 企画: `review_prompts/1_planning.md`(4.3 重複・スパム、4.2.6 テンプレート、4.2 最小機能)。
-- 開発中: `review_prompts/2_development.md`。オーナーが指示したら TestFlight を始める(`workflow/testflight.md`)。
-- 提出前: `review_prompts/3_submission.md`。通過してから `appstore/kit.md` を作る(`appstore/submission_kit_instructions.md`、固有値は `appstore/app_input.md`)。
-- 記録先(Apple 固有): `docs/testflight_feedback.md`。
-
-### 申請・公開
-- 公開ページは `web/` の雛形から作り、GiveTeX サイトの `apps/{スラッグ}/` に置く(PR → 承認 → マージ)。
-  **申請と同時に(遅くとも申請の前に)本番で公開済みにする。**申請後に作らない(広告と App Store Connect のURL入力のため)。
-- スクリーンショットは `appstore/screenshots.md` に従い、Xcode のシミュレータで撮る。捏造しない。テスト広告・デバッグ表示は写さない。
+- 段階: 企画 `review_prompts/1_planning.md`(4.3・4.2.6・4.2) → 開発中 `2_development.md`(指示があれば TestFlight: `workflow/testflight.md`) → 提出前 `3_submission.md`(通過後に `appstore/kit.md`。入口 `appstore/submission_kit_instructions.md`、固有値 `appstore/app_input.md`)。
+- **実装完了(起動アニメーションを含む)をオーナーが宣言するまで、App Store 提出用の Archive・アップロード・App Store Connect の操作に触れない。提案もしない。** TestFlight 用ビルドは、オーナーが指示した時だけ。
+- 審査への返信文・回答案は、**Apple から実際のメッセージが届き、オーナーが文面を渡した時だけ**(雛形 `appstore/after_review/`)。未申請では作らない・埋めない。提出時の「審査メモ」(`appstore/review_notes_template.md`)は別物で、提出前チェックの通過後に作る。
+- **自動入力**(`appstore/automation/README.md`): 実装完了の宣言の後、オーナーが指示した時だけ。`plan` で差分 → 会話で明確に OK → `apply`。**価格は二段階**(`--confirm-price` に地域と金額を打ち直す。新規の設定のみ)。年齢制限は実際の内容に基づく。**審査への提出・個人情報・App Privacy・レコード作成・ビルドのアップロードは手動。**鍵はコミットも貼り付けもしない。クラウドでは使わない。
+- 公開ページ(`web/` の雛形、GiveTeX の `apps/{スラッグ}/`)は、**申請と同時に(遅くとも前に)本番で公開済みに**。スクリーンショットは `appstore/screenshots.md`(シミュレータ。捏造しない。テスト広告・デバッグ表示を写さない)。記録先: `docs/testflight_feedback.md`。
