@@ -42,7 +42,7 @@ cd dev_format
 ./setup.sh /path/to/new-app-repo --store apple --engine swiftui
 ```
 - 既存のファイルは上書きしない。`CLAUDE.md` は、共通 + ストア別 + 技術別をつなげて作る(既に `CLAUDE.md` がある場合は、部品を手動で追記する)。
-- 未整備の組み合わせ(google-play、godot、android)を選ぶと、共通ルールだけが入る。最初に使う時に整備する。
+- 未整備の組み合わせ(godot、android)を選ぶと、共通ルールだけが入る。最初に使う時に整備する。
 - コピー後、新規アプリのリポジトリでコミットする。
 
 ## 更新
