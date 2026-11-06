@@ -12,8 +12,8 @@ dev_format/
 │   └─ google-play/ 初版(クローズドテスト、掲載情報、宣言、審査チェック)
 ├─ engines/
 │   ├─ swiftui/     SwiftUI(iPhone / macOS)
-│   ├─ godot/       未整備
-│   └─ android/     未整備
+│   ├─ godot/       Godot(初版。書き出し手順、ストアとの関係)
+│   └─ android/     Android ネイティブ(初版。Kotlin + Jetpack Compose)
 └─ setup.sh         core + ストア + 技術 を、新規アプリに同じ相対パスでコピーする
 ```
 
@@ -42,7 +42,7 @@ cd dev_format
 ./setup.sh /path/to/new-app-repo --store apple --engine swiftui
 ```
 - 既存のファイルは上書きしない。`CLAUDE.md` は、共通 + ストア別 + 技術別をつなげて作る(既に `CLAUDE.md` がある場合は、部品を手動で追記する)。
-- 未整備の組み合わせ(godot、android)を選ぶと、共通ルールだけが入る。最初に使う時に整備する。
+- 各ストア・技術は初版。公式で要確認の項目は、各 README に書いてある。
 - コピー後、新規アプリのリポジトリでコミットする。
 
 ## 更新
