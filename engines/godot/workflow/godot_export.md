@@ -27,7 +27,11 @@
 - **AAB で書き出すには、Gradle ビルドの設定が必要**。「2021年8月以降に Google Play へ新しく出すアプリは AAB でなければならない」と書かれている。
 - リリース用の**キーストア**: `keytool` で生成(`-keystore`、`-alias`、`-keyalg RSA`)。書き出し設定の Release にキーストアのパス、Release User にエイリアス、Release Password にパスワードを設定する。**キーストアのパスワードと鍵のパスワードは、現状同じにする必要がある。**リリースの書き出しでは「Export With Debug」のチェックを外す。AAB / APK のアップロードには、デバッグ用ではないキーストアが必要。
 - **キーストアとパスワードは、リポジトリにコミットしない。チャットにも出さない。紛失すると更新ができなくなる。安全な場所に控える。**
-- **ターゲット API レベル(要確認・ギャップの可能性あり)**: 2026-08-31 以降、新規アプリと更新は Android 16(API 36)以上が対象(`stores/google-play/`)。このドキュメントには target SDK の設定の記載がなく、必要な Platform は Android 35 と書かれている。**API 36 を対象にできるか**は、使う Godot のバージョンの Android 書き出しのクラスリファレンス(EditorExportPlatformAndroid)と、Gradle ビルドの設定で、書き出し前に必ず確認する。満たせない場合は、新しいバージョンへ上げる。
+- **ターゲット API レベル(2026-11-06 に調査)**: 2026-08-31 以降、新規アプリと更新は Android 16(API 36)以上が対象(`stores/google-play/`)。
+  - Godot の書き出し設定には `gradle_build/min_sdk` と `gradle_build/target_sdk` がある(公式クラスリファレンス EditorExportPlatformAndroid。どちらも文字列。**既定値の記載はない**)。いずれも「Gradle ビルドの時に使う」と書かれているので、**`gradle_build/use_gradle_build` を有効にしたカスタムビルドで使う**。
+  - 既定値: フォーラムの情報では、**4.7 は target SDK 36 が既定**、3.6.3 の保守リリースで既定が 36 に上がった。**4.6.x の既定は確認できなかった。**
+  - 手順: ①使う Godot のバージョンで、`gradle_build/target_sdk` を**明示的に 36 にする** ②Android SDK Manager で、Platform 36 を入れる(公式のセットアップ一覧は Platform 35 までの記載で、古い可能性がある。ビルドエラーが出たら、新しい Godot へ上げる) ③AAB を書き出し、**中のマージ後のマニフェストに `android:targetSdkVersion="36"` が入っているか確認する**(Android Studio の APK Analyzer などで開く) ④Play Console のアップロード後の警告も確認する(マニフェストが正しくても、Play が警告を出した例の報告がある)。
+  - 満たせない場合は、Godot を新しいバージョンへ上げる。上げる時は、エディタとエクスポートテンプレートを一致させ、実機で再確認する。
 - 以降の申請(クローズドテスト、掲載情報、データセーフティ、提出前チェック)は `stores/google-play/` に従う。
 
 ## 両ストアに出す時
