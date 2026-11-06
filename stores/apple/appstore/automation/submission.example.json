@@ -1,0 +1,24 @@
+{
+  "bundleId": "com.example.yourapp",
+  "versionString": "1.0.0",
+  "versionLocalizations": {
+    "ja": {
+      "description": "(説明文。kit.md と同じ内容)",
+      "keywords": "(キーワード。100文字以内)",
+      "promotionalText": "(プロモーション用テキスト。170文字以内)",
+      "supportUrl": "https://givetex.org/apps/your-slug/support/",
+      "marketingUrl": "https://givetex.org/apps/your-slug/",
+      "whatsNew": "(このバージョンの新機能)"
+    }
+  },
+  "appInfoLocalizations": {
+    "ja": {
+      "name": "(アプリ名。30文字以内)",
+      "subtitle": "(サブタイトル。30文字以内)",
+      "privacyPolicyUrl": "https://givetex.org/apps/your-slug/privacy/"
+    }
+  },
+  "reviewDetail": {
+    "notes": "(審査メモ。review_notes_template.md の6項目。個人情報は入れない)"
+  }
+}
