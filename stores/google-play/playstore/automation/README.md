@@ -4,16 +4,22 @@
 **確定(`--commit`)は、別の承認を得てから。** 確定は「変更を公開に送る」操作(公開済みのアプリでは審査に送られる)。
 
 ## 状態(重要)
-- `play_sync.py` のテスト(`python3 -m unittest -v test_play_sync`)は、偽の応答で12件通過している。**実際の Google Play の API では、まだ一度も実行していない。**
+- `play_sync.py` のテスト(`python3 -m unittest -v test_play_sync`)は、偽の応答で13件通過している。**実際の Google Play の API では、まだ一度も実行していない。**
 - 最初は必ず `plan` だけを実行する。
-- 公式リファレンスで確認できた点(2026-11-06): `applications.dataSafety`(POST。本文は `safetyLabels` = CSV の内容、応答は空、スコープ `androidpublisher`)、`edits.commit`(POST `.../edits/{editId}:commit`。`changesInReviewBehavior` の `ERROR_IF_IN_REVIEW` あり。`changesNotSentForReview` あり)、`edits.listings` の `list/get/update/patch/delete/deleteall` と Listing の項目(`language`、`title`、`fullDescription`、`shortDescription`、`video`)、`edits.images.upload`(アップロード URI は `upload/androidpublisher/v3/applications/{packageName}/edits/{editId}/listings/{language}/{imageType}`)。
-- **未検証**: `edits.listings` の HTTP 動詞(公式ページに明記がなく、`patch` は PATCH とした)、`imageType` の値(公式ページに一覧がなく、`phoneScreenshots` / `icon` / `featureGraphic` とした)、`edits.insert` / `edits.delete` / `edits.validate` の細部、画像の枚数・寸法の上限。エラーが出たら、公式の AppImageType と各ページを確認する。
+- **公式リファレンスで確認できた点(2026-11-06)**:
+  - `edits.insert`: POST `.../edits`。`edits.delete`: DELETE `.../edits/{editId}`。`edits.validate`: POST `.../edits/{editId}:validate`(本文は空)。`edits.commit`: POST `.../edits/{editId}:commit`(`changesInReviewBehavior` の `ERROR_IF_IN_REVIEW` あり、`changesNotSentForReview` あり)。
+  - `edits.listings.patch`: **PATCH** `.../edits/{editId}/listings/{language}`、`edits.listings.update`: **PUT** 同じ URL。Listing の項目は `language`、`title`、`fullDescription`、`shortDescription`、`video`(字数の上限は公式ページに記載なし)。
+  - `edits.images`: `list` は **GET**、`deleteall` は **DELETE**(どちらも `.../edits/{editId}/listings/{language}/{imageType}`。`deleteall` の応答は `deleted` の配列)、`upload` は POST(`upload/androidpublisher/v3/...` の URI)。
+  - **`AppImageType` の値**: `phoneScreenshots`、`sevenInchScreenshots`、`tenInchScreenshots`、`tvScreenshots`、`wearScreenshots`、`icon`、`featureGraphic`、`tvBanner`(このスクリプトが対応するのは、`phoneScreenshots`・`sevenInchScreenshots`・`tenInchScreenshots`・`icon`・`featureGraphic`)。
+  - `applications.dataSafety`: POST、本文は `safetyLabels`(CSV の内容)、応答は空。
+  - **画像の規則(Google Play ヘルプ)**: スクリーンショットは端末の種類ごとに最大 8 枚、公開には端末の種類をまたいで最低 2 枚、JPEG または 24 ビット PNG(アルファなし)、各辺 320〜3840px、長辺は短辺の 2 倍まで。アイコンは 512×512 の 32 ビット PNG(アルファあり)、1024KB 以下。フィーチャーグラフィックは 1024×500 の JPEG または 24 ビット PNG(アルファなし)。`plan` で、ローカルの画像をこの規則で検査する。
+- **まだ確認できていない点**: タイトルの文字数の上限(公式ページに記載なし。30 と 50 の情報がある。50 超はエラー、30 超は警告)、`fullDescription` の上限(4,000 文字とされる。二次情報)、`edits.insert` の本文の細部、タブレットの推奨寸法(1,080〜7,680px は推奨であり、必須としては検査していない)。
 
 ## 自動にできるもの / できないもの
 | 項目 | このスクリプト |
 |---|---|
 | 掲載情報(タイトル、短い説明、詳しい説明、動画URL) | 対応 |
-| 画像(スクリーンショット、アイコン、フィーチャーグラフィック) | 対応(置き換えは `--allow-delete-images` が必要) |
+| 画像(スマホ / 7インチ / 10インチのスクリーンショット、アイコン、フィーチャーグラフィック) | 対応(置き換えは `--allow-delete-images` が必要。TV / Wear OS は未対応) |
 | データセーフティ(CSV) | 対応(`datasafety`。**現在の値を API で読めないので差分はなし。宣言全体を上書き**) |
 | アプリの作成、AAB のアップロード、トラックへのリリース | 対象外(手動 / 別の工程) |
 | アプリのコンテンツの宣言(広告、アクセス、ターゲット層、レーティング) | 対象外(手動) |

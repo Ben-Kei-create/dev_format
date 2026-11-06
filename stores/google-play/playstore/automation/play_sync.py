@@ -11,17 +11,31 @@
 - 認証: サービスアカウントの JSON 鍵のパスを環境変数 PLAY_SA_KEY_PATH に。鍵はリポジトリに置かない・表示しない。
         Play Console の「ユーザーと権限」でサービスアカウントを招待し、必要な権限を与えておく。
 - 依存: pip install pyjwt cryptography
-状態: 実際の API では未実行(テストは偽の応答のみ)。edits.listings の HTTP 動詞と images の imageType の値は、
-      公式ページに明記がなく、慣例・記憶による(未検証)。最初は必ず `plan` だけを実行すること。
+状態: 実際の API では未実行(テストは偽の応答のみ)。公式リファレンスで確認済み(2026-11-06): edits.insert(POST)、
+      edits.delete(DELETE)、edits.validate(POST :validate)、edits.commit(POST :commit)、edits.listings.patch(PATCH)・update(PUT)、
+      edits.images の list(GET)・deleteall(DELETE)・upload、AppImageType の値、applications.dataSafety(POST)。
+      最初は必ず `plan` だけを実行すること。
 """
-import argparse, hashlib, json, os, pathlib, re, sys, time, urllib.error, urllib.parse, urllib.request
+import argparse, hashlib, json, os, pathlib, re, struct, sys, time, urllib.error, urllib.parse, urllib.request
 
 API = "https://androidpublisher.googleapis.com/androidpublisher/v3/applications"
 UPLOAD = "https://androidpublisher.googleapis.com/upload/androidpublisher/v3/applications"
 SCOPE = "https://www.googleapis.com/auth/androidpublisher"
 LISTING_FIELDS = {"title": 50, "shortDescription": 80, "fullDescription": 4000, "video": None}
 TITLE_RECOMMENDED = 30  # 30 と 50 の情報がある。Play Console で確認。50 超はエラー、30 超は警告
-IMAGE_TYPES = {"phoneScreenshots": 8, "icon": 1, "featureGraphic": 1}  # 値は未検証。枚数は目安(公式で確認)
+# 画像の規則: Google Play ヘルプ「プレビュー アセット」(2026-11-06 確認)。imageType の値は AppImageType(公式)
+# スクリーンショット: 端末の種類ごとに最大8枚 / JPEG または24ビット PNG(アルファなし) / 各辺 320〜3840px / 長辺は短辺の2倍まで
+# アイコン: 512x512 / 32ビット PNG(アルファあり) / 1024KB 以下
+# フィーチャーグラフィック: 1024x500 / JPEG または24ビット PNG(アルファなし)
+SHOT = {"max": 8, "alpha": False, "minDim": 320, "maxDim": 3840, "ratio": 2}
+IMAGE_RULES = {
+    "phoneScreenshots": SHOT,
+    "sevenInchScreenshots": SHOT,
+    "tenInchScreenshots": SHOT,
+    "icon": {"max": 1, "exact": (512, 512), "alpha": True, "maxKB": 1024, "png": True},
+    "featureGraphic": {"max": 1, "exact": (1024, 500), "alpha": False},
+}
+IMAGE_TYPES = {k: v["max"] for k, v in IMAGE_RULES.items()}  # (tvScreenshots / wearScreenshots / tvBanner は未対応)
 IMAGE_EXT = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg"}
 
 EMAIL = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}")
@@ -76,7 +90,7 @@ def validate(data):
                 errs.append(f"images.{lang}.{t} はファイルのパスの配列にしてください")
                 continue
             if len(files) > IMAGE_TYPES[t]:
-                errs.append(f"images.{lang}.{t} が {IMAGE_TYPES[t]} 枚を超えています(公式の上限を確認)")
+                errs.append(f"images.{lang}.{t} が上限 {IMAGE_TYPES[t]} 枚を超えています")
             for f in files:
                 if not isinstance(f, str) or pathlib.Path(f).suffix.lower() not in IMAGE_EXT:
                     errs.append(f"images.{lang}.{t}: {f!r} は .png / .jpg / .jpeg のパスにしてください")
@@ -89,6 +103,59 @@ def validate(data):
                 errs.append(f"{path}: メールアドレスらしい文字列があります(個人情報は入れない)")
         if PHONE.search(s):
             errs.append(f"{path}: 電話番号らしい文字列があります(個人情報は入れない)")
+    return errs, warns
+
+
+def image_info(path):
+    """(幅, 高さ, アルファの有無, 形式) を返す。PNG と JPEG のヘッダーだけを読む。"""
+    b = pathlib.Path(path).read_bytes()
+    if b[:8] == b"\x89PNG\r\n\x1a\n":
+        w, h = struct.unpack(">II", b[16:24])
+        return w, h, b[25] in (4, 6), "png"
+    if b[:2] == b"\xff\xd8":
+        i = 2
+        while i + 9 < len(b):
+            if b[i] != 0xFF:
+                i += 1
+                continue
+            if b[i + 1] in (0xC0, 0xC1, 0xC2):
+                h, w = struct.unpack(">HH", b[i + 5:i + 9])
+                return w, h, False, "jpeg"
+            i += 2 + struct.unpack(">H", b[i + 2:i + 4])[0]
+    raise SyncError(f"{path}: 画像の形式を読み取れません(PNG / JPEG のみ)")
+
+
+def check_images(data, base_dir):
+    """ローカルの画像を公式の規則で検査する。(エラー, 警告) を返す。"""
+    errs, warns, shots = [], [], 0
+    for lang, types in (data.get("images") or {}).items():
+        for t, files in types.items():
+            rule = IMAGE_RULES.get(t)
+            if not rule:
+                continue
+            for f in files:
+                path = pathlib.Path(f) if pathlib.Path(f).is_absolute() else pathlib.Path(base_dir) / f
+                if not path.exists():
+                    errs.append(f"{f}: ファイルがありません")
+                    continue
+                w, h, alpha, fmt = image_info(path)
+                if t.endswith("Screenshots"):
+                    shots += 1
+                if rule.get("png") and fmt != "png":
+                    errs.append(f"{f}: {t} は PNG にしてください")
+                if not rule.get("alpha") and alpha:
+                    errs.append(f"{f}: アルファチャンネルがあります({t} は不可。24ビット PNG または JPEG)")
+                if "exact" in rule and (w, h) != rule["exact"]:
+                    errs.append(f"{f}: 寸法 {w}x{h} は {t} の {rule['exact'][0]}x{rule['exact'][1]} と一致しません")
+                if "minDim" in rule:
+                    if min(w, h) < rule["minDim"] or max(w, h) > rule["maxDim"]:
+                        errs.append(f"{f}: 寸法 {w}x{h} は各辺 {rule['minDim']}〜{rule['maxDim']}px の範囲外です")
+                    if max(w, h) > rule["ratio"] * min(w, h):
+                        errs.append(f"{f}: 縦横比が {rule['ratio']}:1 を超えています({w}x{h})")
+                if "maxKB" in rule and path.stat().st_size > rule["maxKB"] * 1024:
+                    errs.append(f"{f}: {rule['maxKB']}KB を超えています")
+    if data.get("images") and shots < 2:
+        warns.append("スクリーンショットは、公開に最低2枚(端末の種類をまたいで)必要とされます")
     return errs, warns
 
 
@@ -186,12 +253,10 @@ def build_plan(c, data, base_dir="."):
         raise SyncError("入力に問題があります:\n  - " + "\n  - ".join(errs))
     pkg = data["packageName"]
     plan = {"package": pkg, "changes": [], "images": [], "dataSafety": None, "warnings": warns}
-    for lang, files_by_type in (data.get("images") or {}).items():
-        for t, files in files_by_type.items():
-            for f in files:
-                path = pathlib.Path(f) if pathlib.Path(f).is_absolute() else pathlib.Path(base_dir) / f
-                if not path.exists():
-                    raise SyncError(f"{f}: ファイルがありません")
+    img_errs, img_warns = check_images(data, base_dir)
+    if img_errs:
+        raise SyncError("画像に問題があります:\n  - " + "\n  - ".join(img_errs))
+    plan["warnings"] += img_warns
     if data.get("dataSafety"):
         text, digest, rows = read_csv(base_dir, data["dataSafety"]["csvPath"])
         plan["dataSafety"] = {"csv": data["dataSafety"]["csvPath"], "sha": digest, "rows": rows}

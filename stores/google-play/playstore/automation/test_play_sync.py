@@ -1,7 +1,13 @@
-import json, tempfile, unittest, pathlib
+import json, struct, tempfile, unittest, pathlib
 import play_sync as p
 
 PKG = "com.example.app"
+
+
+def fake_png(path, w, h, color_type=2, pad=40):
+    ihdr = struct.pack(">IIBBBBB", w, h, 8, color_type, 0, 0, 0)
+    pathlib.Path(path).write_bytes(b"\x89PNG\r\n\x1a\n" + struct.pack(">I", 13) + b"IHDR" + ihdr + b"\0\0\0\0" + b"x" * pad)
+
 BASE = {"packageName": PKG}
 
 
@@ -24,7 +30,7 @@ class Fake:
 class T(unittest.TestCase):
     def setUp(self):
         self.t = tempfile.TemporaryDirectory(); self.dir = pathlib.Path(self.t.name)
-        (self.dir / "a.png").write_bytes(b"png1"); (self.dir / "ds.csv").write_text("a,b\n1,2\n", encoding="utf-8")
+        fake_png(self.dir / "a.png", 1080, 1920); (self.dir / "ds.csv").write_text("a,b\n1,2\n", encoding="utf-8")
     def tearDown(self): self.t.cleanup()
 
     def test_validate_limits_and_unknown(self):
@@ -37,6 +43,20 @@ class T(unittest.TestCase):
         mail = "someone" + "@" + "gmail.com"; tel = "090-" + "1234-5678"
         e, _ = p.validate(dict(BASE, listings={"ja-JP": {"fullDescription": f"{mail} {tel}"}}))
         s = "\n".join(e); self.assertIn("メール", s); self.assertIn("電話", s)
+    def test_image_rules(self):
+        fake_png(self.dir / "alpha.png", 1080, 1920, color_type=6); fake_png(self.dir / "tall.png", 400, 1000)
+        fake_png(self.dir / "fg.png", 1024, 500); fake_png(self.dir / "fg_bad.png", 1000, 500)
+        fake_png(self.dir / "icon.png", 512, 512, color_type=6); fake_png(self.dir / "icon_bad.png", 500, 500, color_type=6)
+        def errors(t, f):
+            try: p.build_plan(Fake(), dict(BASE, images={"ja-JP": {t: [f]}}), self.dir); return ""
+            except p.SyncError as e: return str(e)
+        self.assertIn("アルファ", errors("phoneScreenshots", "alpha.png"))
+        self.assertIn("縦横比", errors("phoneScreenshots", "tall.png"))
+        self.assertEqual(errors("featureGraphic", "fg.png"), "")
+        self.assertIn("1024x500", errors("featureGraphic", "fg_bad.png"))
+        self.assertEqual(errors("icon", "icon.png"), "")  # アイコンはアルファ可
+        self.assertIn("512x512", errors("icon", "icon_bad.png"))
+        self.assertEqual(errors("sevenInchScreenshots", "a.png"), "")
     def test_validate_image_types(self):
         e, _ = p.validate(dict(BASE, images={"ja-JP": {"bogus": ["a.png"]}})); self.assertIn("未対応", "\n".join(e))
     def test_plan_diff_and_read_only(self):
@@ -73,7 +93,7 @@ class T(unittest.TestCase):
         names = [(c[0], c[1].split(PKG)[-1]) for c in f.calls]
         self.assertIn(("DELETE", "/edits/E1/listings/ja-JP/phoneScreenshots"), names)
         up = [c for c in f.calls if c[0] == "POST" and "/upload/" in c[1]][0]
-        self.assertEqual(up[4], b"png1"); self.assertEqual(up[5], "image/png"); self.assertEqual(up[2], {"uploadType": "media"})
+        self.assertEqual(up[4], (self.dir / "a.png").read_bytes()); self.assertEqual(up[5], "image/png"); self.assertEqual(up[2], {"uploadType": "media"})
     def test_failed_validate_discards_edit(self):
         f = Fake(); d = dict(BASE, listings={"ja-JP": {"title": "新"}})
         plan = p.build_plan(f, d, self.dir); f.calls.clear()
