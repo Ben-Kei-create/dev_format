@@ -24,7 +24,7 @@
 | ②実装完了・未申請 | `2_development.md`、`2b_edge_cases.md`、`3_submission.md`、`codex_review.md`(Codex用) |
 | ③申請済み | `3_submission.md` の観点で、申告と実装の食い違い(プライバシー、年齢制限、課金)を確認 |
 | ④リジェクト後 | 指摘文を読み、該当ガイドラインを特定。`1_planning.md` で重複・テンプレート性を診断し、返信か修正かを判断(Apple の実際のメッセージが届き、オーナーが文面を渡している場合のみ) |
-| ⑤公開済み | 変更範囲に応じた `2_development.md`、`3_submission.md`、更新時の再申告項目 |
+| ⑤公開済み | 変更範囲に応じた `2_development.md`、`3_submission.md`、更新時の再申告項目(手順は `workflow/update_release.md`) |
 
 診断結果は、「重大 / 推奨 / 提案」に分け、根拠(ファイルと行、公式資料)を添える。
 
