@@ -1,6 +1,6 @@
 # Android ネイティブの詳細ルール(初版。公式で要確認の項目あり)
 
-`CLAUDE.md` の要点の詳細版。標準(Kotlin + Jetpack Compose、MVVM、Room / DataStore)は二次情報で確認したもの。公式(developer.android.com の App architecture ほか)で再確認すること。
+`CLAUDE.md` の要点の詳細版。**公式(developer.android.com)で確認した点には(公式)、二次情報や未確認の点には(要確認)と付ける。**確認日 2026-11-06。
 
 - **標準**: Kotlin + Jetpack Compose。UI は Compose を基本とし、画面ごとに状態(ViewModel + StateFlow)を持つ。迷ったら公式の「Guide to app architecture」(developer.android.com)に従う。
 - データは**端末内保存を優先**(設定は DataStore、構造化データは Room)。バックエンドは、必要性が明確になるまで入れない(`philosophy/tech_standards.md`)。
@@ -12,3 +12,49 @@
 - 起動: OS の起動画面(Android 12 以降のスプラッシュ。背景色とアイコン)は静止。パラパラ漫画のアニメーションは、その直後に Compose 内で流す(`modes/launch_animation.md`)。「アニメーションを減らす」設定(アニメーション倍率が 0)の時は、最後のフレームを静止で表示する。
 - スクリーンショットは `stores/google-play/playstore/screenshots.md` に従い、エミュレータまたは実機で撮る。
 - テスト: 実機で、複数の画面サイズ・Android バージョン・向き・ダークモード・文字拡大を確認する。
+
+
+## 公式で確認した内容(2026-11-06)
+
+### アーキテクチャ(App architecture)
+- 最低2層: **UI 層**(画面に表示)と**データ層**(ビジネスロジックを持ち、データを公開)。**ドメイン層は任意**で、複雑なロジックや再利用が必要な時だけ使う。(公式)
+- UI 層は Jetpack Compose の関数 + **状態保持クラス(ViewModel など)**。状態保持クラスは、その UI と同じ期間だけ生きる(画面なら、バックスタックから外れるまで)。(公式)
+- データ層は**リポジトリ**(データの種類ごとに1つ)と、0個以上の**データソース**(ファイル、ネットワーク、ローカル DB)。(公式)
+- 原則: **関心の分離**、**データモデルから UI を駆動**(できれば永続化したモデル。オフラインでも動く)、**単一の信頼できる情報源(SSOT)**、**単方向のデータの流れ(UDF)**(状態は下へ、イベントは上へ)。(公式)
+- Activity にデータや状態を持たせない。単一 Activity で Compose の画面を載せる構成が現代的。(公式)
+- **DI(依存性注入)は Hilt を使うことが公式の推奨(Key Point)。**本フォーマットの「依存を増やさない」(機能は削る)と食い違う。**小さなアプリは、手動の DI(コンストラクタで渡す)で足りる。規模が増えたら Hilt を入れる、という扱いを既定にする。**オーナーが違う方針なら、変更する。
+- 注: Room / DataStore の具体名は、今回取得した公式ページの本文にはなかった(要確認)。ローカル DB が「データソース」の例として挙げられている。
+
+### Compose の状態(Compose state)
+- 状態は `remember { mutableStateOf(...) }` / `by`。**画面の回転などの構成変更をまたぐ値は `rememberSaveable`**。(公式)
+- **ViewModel の `StateFlow` は `collectAsStateWithLifecycle()` で集める。公式が「Android アプリでフローを集める推奨の方法」と明記。**依存: `androidx.lifecycle:lifecycle-runtime-compose`(公式の表記は 2.11.0)。(公式)
+- **状態の持ち上げ(state hoisting)**: 値を `value: T` と `onValueChange: (T) -> Unit` の2つの引数にして、呼び出し側へ状態を移す。持ち上げ先は、(1)読む全ての composable の最も近い共通の親、(2)変更される最も高い場所、(3)同じイベントで変わる2つの状態は一緒に、の3つの規則。(公式)
+- **`ArrayList` や `mutableListOf()` のような、観測されない可変オブジェクトを状態にしない。**`State<List<T>>` と不変の `listOf()` を使う。(公式)
+- 基本の形:
+  ```kotlin
+  // ViewModel: 状態は不変の data class を StateFlow で公開し、イベントは関数で受ける
+  // 画面:
+  @Composable
+  fun HomeRoute(vm: HomeViewModel = viewModel()) {
+      val state by vm.uiState.collectAsStateWithLifecycle()
+      HomeScreen(state = state, onAnswer = vm::onAnswer)   // 状態は下へ、イベントは上へ
+  }
+  @Composable
+  fun HomeScreen(state: HomeUiState, onAnswer: (Int) -> Unit) { /* 状態を持たない(ステートレス) */ }
+  ```
+
+### スプラッシュ画面(起動)
+- **Android 12 以降は、アプリの起動時に OS がスプラッシュ画面を出す**(アプリのアイコン + 単色の背景)。Jetpack の `SplashScreen` 互換ライブラリ(`androidx.core:core-splashscreen`、公式の表記は 1.2.0)で、API 23 以降に同じ見た目を提供でき、Compose でも使える。(公式)
+- 使い方: スプラッシュ用のテーマ(`Theme.SplashScreen`)を作り、`postSplashScreenTheme` を設定し、開始 Activity で `installSplashScreen()` を **`super.onCreate()` の前**に呼ぶ。(公式)
+- スプラッシュは**最初のフレームが描画されるまで**出る。非同期の読み込みがある時は `setKeepOnScreenCondition { ... }` で残す(条件は描画のたびに評価されるので、速くする)。(公式)
+- アイコンは**アニメーションにもできる**(AnimatedVectorDrawable。**推奨は 1,000ms 以内**。開始の遅延は 166ms まで)。終了のアニメーションは `setOnExitAnimationListener` で変えられ、終わったら `remove()` を呼ぶ。(公式)
+- スプラッシュは**ホットスタートでは出ない**。(公式)
+- **本フォーマットとの関係**: OS のスプラッシュは短い静止(または短い AVD)にとどめ、「パラパラ漫画」(`modes/launch_animation.md`)は、スプラッシュが消えた後に Compose 内で流す。スプラッシュのアイコンは、既定でランチャーのアイコンになる(OS の仕様)。「アイコンの図柄を他へ流用しない」は、パラパラ漫画の側で守る。
+- 「アニメーションを減らす」設定の検出(アニメーション倍率が 0)は、今回の公式ページでは確認できなかった(要確認)。
+
+### アクセシビリティ
+- Compose と Material の部品は、アクセシビリティの既定の動作を持つ。`Button` / `Switch` / `Checkbox` などの標準部品を使う。(公式)
+- ボタンや画像などの操作できる要素には、**意味の分かるラベル**(`contentDescription` / `semantics`)を付ける。装飾だけの画像は `contentDescription = null`。(公式)
+- **色だけに頼らない**(形・文字・位置も使う)。(公式)
+- ドラッグやスワイプでしかできない操作には、**代替の操作(`customActions`)**を用意する。(公式)
+- **タップ領域 48dp、コントラスト比の数値は、今回取得したページには載っていなかった**(要確認。公式の別ページで確認する)。
