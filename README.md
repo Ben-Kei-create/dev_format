@@ -20,9 +20,10 @@ dev_format/
 ### core/(共通)
 - `CLAUDE.md`(共通ルール)、`ExperiencePoints.md`(知見。申請完了後に更新できる唯一のファイル)、`randomdice.md`(依存度ダイス)
 - `philosophy/`(開発思想、デザイン原則、固定フォント、技術の標準)、`growth/`(差別化プレイブック)
-- `modes/`(Era / Rule / Voice の3つの質問、アイコン用プロンプト、画面デザインの参考画像(インタビュー形式)、画像素材の依頼、起動アニメーション、音声)
+- `modes/`(Era / Rule / Voice の3つの質問、会話の形態(Q4)、アイコン用プロンプト、画面デザインの参考画像(インタビュー形式)、画像素材の依頼、アニメーション(コマ撮り方式)、起動アニメーション、音声)
+- `handoff/`(状態別の渡し方の指示文: 新規・実装中・提出前・申請済み・アップデート)
 - `review_prompts/`(0 受け取り、1b 差別化、2b 想定外、Codex レビュー、既存アプリ診断、`external/`=ChatGPT・Codex 向けレビュー指示)
-- `marketing/`(X での宣伝。既定 @AIJAPANE)、`web/`(公開ページの雛形。GiveTeX 用)、`workflow/`(コマンド・スキル・モデルの使い分け、使うツール・素材のカタログ)
+- `marketing/`(X での宣伝。既定 @AIJAPANE)、`web/`(公開ページの雛形。GiveTeX 用)、`workflow/`(コマンド・スキル・モデルの使い分け、使うツール・素材のカタログ、公開済みアプリのアップデート手順)
 - `docs/`(記録の雛形)、`scripts/`(ダイス、pre-commit=個人情報・鍵の混入を止める)、`.gitignore`
 
 ### stores/apple/
